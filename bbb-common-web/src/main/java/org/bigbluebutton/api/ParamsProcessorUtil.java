@@ -80,6 +80,8 @@ public class ParamsProcessorUtil {
     private String defaultClientUrl;
     private String defaultGuestWaitURL;
     private String html5ClientUrl;
+    private String middleManUrl;
+    private String bouncerUrl;
     private Boolean moderatorsJoinViaHTML5Client;
     private Boolean attendeesJoinViaHTML5Client;
     private Boolean allowRequestsWithoutSession;
@@ -536,6 +538,14 @@ public class ParamsProcessorUtil {
 		return html5ClientUrl;
 	}
 
+	public String getMiddleManUrl() {
+	   return middleManUrl;
+   }
+
+   public String getBouncerUrl() {
+      return bouncerUrl;
+   }
+
 	public Boolean getAttendeesJoinViaHTML5Client() {
 		return attendeesJoinViaHTML5Client;
 	}
@@ -897,6 +907,10 @@ public class ParamsProcessorUtil {
 	public void setHtml5ClientUrl(String html5ClientUrl) {
 		this.html5ClientUrl = html5ClientUrl;
 	}
+
+   public void setMiddleManUrl(String middleManUrl) { this.middleManUrl = middleManUrl; }
+
+   public void setBouncerUrl(String bouncerUrl) { this.bouncerUrl = bouncerUrl; }
 
 	public void setModeratorsJoinViaHTML5Client(Boolean moderatorsJoinViaHTML5Client) {
 		this.moderatorsJoinViaHTML5Client = moderatorsJoinViaHTML5Client;

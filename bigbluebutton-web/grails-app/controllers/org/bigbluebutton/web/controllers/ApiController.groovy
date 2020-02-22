@@ -165,6 +165,39 @@ class ApiController {
     }
   }
 
+    /**********************************************
+     * MIDDLE MAN
+     *********************************************/
+    def middleman = {
+        String API_CALL = 'middleman'
+        log.debug CONTROLLER_NAME + "#${API_CALL}"
+        ApiErrors errors = new ApiErrors()
+
+        String middleManUrl = paramsProcessorUtil.getMiddleManUrl()
+        log.debug "middleman url: " + middleManUrl
+
+        redirect(url: middleManUrl+"?meetingId=random-8120967")
+
+    }
+
+    /********************************************
+     * bouncer
+     * middleman join redirect
+     *******************************************/
+
+    def bouncer = {
+        String API_CALL = 'bouncer'
+        log.debug CONTROLLER_NAME + "#${API_CALL}"
+        ApiErrors errors = new ApiErrors()
+
+        String bouncerUrl = paramsProcessorUtil.getBouncerUrl()
+        log.debug "bouncer url: " + bouncerUrl
+
+        log.info("Successfully joined. Sending XML response.");
+        redirect(url: "google.com")
+
+    }
+
 
   /**********************************************
    * JOIN API
@@ -500,6 +533,8 @@ class ApiController {
     // Process if we send the user directly to the client or
     // have it wait for approval.
     String destUrl = clientURL + "?sessionToken=" + sessionToken
+
+
     if (guestStatusVal.equals(GuestPolicy.WAIT)) {
       String guestWaitUrl = paramsProcessorUtil.getDefaultGuestWaitURL();
       destUrl = guestWaitUrl + "?sessionToken=" + sessionToken

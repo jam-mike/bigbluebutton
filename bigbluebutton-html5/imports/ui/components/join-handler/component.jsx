@@ -212,6 +212,9 @@ class JoinHandler extends Component {
   render() {
     const { children } = this.props;
     const { joined } = this.state;
+
+    console.log('children', this.props, this.state);
+
     return joined
       ? children
       : (<LoadingScreen />);

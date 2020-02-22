@@ -63,6 +63,14 @@ class UrlMappings {
       action = [POST: 'setPollXML']
     }
 
+      "/bigbluebutton/api/middleman"(controller: "api") {
+          action = [GET: 'middleman']
+      }
+
+      "/bigbluebutton/api/bouncer"(controller: "api") {
+          action = [GET: 'bouncer']
+      }
+
     "/bigbluebutton/api/getMeetings"(controller: "api") {
       action = [GET: 'getMeetingsHandler', POST: 'getMeetingsHandler']
     }
