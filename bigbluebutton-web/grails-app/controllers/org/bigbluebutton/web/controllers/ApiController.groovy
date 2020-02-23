@@ -39,6 +39,7 @@ import org.bigbluebutton.web.services.turn.TurnEntry
 import org.bigbluebutton.web.services.turn.StunServer
 import org.bigbluebutton.web.services.turn.RemoteIceCandidate
 import org.json.JSONArray
+import org.bigbluebutton.web.services.*
 
 import javax.servlet.ServletRequest
 
@@ -176,7 +177,7 @@ class ApiController {
         String middleManUrl = paramsProcessorUtil.getMiddleManUrl()
         log.debug "middleman url: " + middleManUrl
 
-        redirect(url: middleManUrl+"?meetingId=random-8120967")
+        redirect(url: middleManUrl+"?meetingId=random-5346003")
 
     }
 
@@ -190,11 +191,24 @@ class ApiController {
         log.debug CONTROLLER_NAME + "#${API_CALL}"
         ApiErrors errors = new ApiErrors()
 
-        String bouncerUrl = paramsProcessorUtil.getBouncerUrl()
-        log.debug "bouncer url: " + bouncerUrl
+        ApiService apiServ = new ApiService(paramsProcessorUtil);
 
+        log.info 'DEFAULT SERVER URL: ' + apiServ.url
+        log.info 'SALT: ' + apiServ.salt
+
+        def params = [
+                "meeting_id": 'random-5346003',
+                "full_name": "User 1707771",
+        ]
+        //TODO these params should come in from api request from html5client
+//        String joinUrl = apiServ.getJoinUrl(params, "Lets Jam!", "extended");
+        String joinUrl = apiServ.joinUrl(null, null, null)
+
+        log.debug "join url: " + joinUrl
+
+
+        redirect(url: joinUrl)
         log.info("Successfully joined. Sending XML response.");
-        redirect(url: "google.com")
 
     }
 

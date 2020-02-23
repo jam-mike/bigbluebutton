@@ -525,6 +525,10 @@ public class ParamsProcessorUtil {
 	public boolean isServiceEnabled() {
 		return serviceEnabled;
 	}
+
+	public String getDefaultServerUrl() { return defaultServerUrl; }
+
+	public String getSecuritySalt() { return securitySalt; }
 	
 	public String getDefaultClientUrl() {
 		return defaultClientUrl;
