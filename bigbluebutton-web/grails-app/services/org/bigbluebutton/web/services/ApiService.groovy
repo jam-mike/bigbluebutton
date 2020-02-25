@@ -58,7 +58,7 @@ class ApiService {
 
     def url;
     def salt;
-    def idParams = "meeting_id,oauth_consumer_key"
+    def idParams = "meetingID,oauth_consumer_key"
 
     Proxy bbbProxy
     DocumentBuilderFactory docBuilderFactory
@@ -74,7 +74,7 @@ class ApiService {
         try {
             docBuilder = docBuilderFactory.newDocumentBuilder()
         } catch (ParserConfigurationException e) {
-            org.bigbluebutton.web.controllers.BigBlueButtonService.log.error("Failed to initialise BaseProxy", e)
+            log.error("Failed to initialise BaseProxy", e)
         }
         //Instantiate bbbProxy and initialize it with default url and salt
         bbbProxy = new Proxy(url, salt)
@@ -114,8 +114,9 @@ class ApiService {
         String welcomeMsg = MessageFormat.format(welcome, values)
         String meta = getMonitoringMetaData(params)
         String createURL = getCreateURL(meetingName, meetingID, attendeePW, moderatorPW, welcomeMsg, voiceBridge, logoutURL, record, duration, meta)
+        log.debug "createURL MIKE: " + createURL
         Map<String, Object> responseAPICall = doAPICall(createURL)
-        org.bigbluebutton.web.controllers.BigBlueButtonService.log.info "responseAPICall: " + responseAPICall
+        log.info "responseAPICall: " + responseAPICall
         if (responseAPICall == null) {
             return null
         }
@@ -129,7 +130,7 @@ class ApiService {
             return null
         }
         def joinURL = bbbProxy.getJoinURL(userFullName, meetingID, (isModerator || allModerators)? moderatorPW: attendeePW, (String) response.get("createTime"), userID)
-        org.bigbluebutton.web.controllers.BigBlueButtonService.log.info "joinURL: " + joinURL
+        log.info "joinURL: " + joinURL
         return joinURL
     }
 
@@ -287,7 +288,7 @@ class ApiService {
         StringBuilder urlStr = new StringBuilder(query);
         try {
             // open connection
-            org.bigbluebutton.web.controllers.BigBlueButtonService.log.debug("doAPICall.call: " + query );
+            log.debug "doAPICall.call: " + query
             URL url = new URL(urlStr.toString());
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setUseCaches(false);
@@ -328,16 +329,17 @@ class ApiService {
                 Map<String, Object> response = jsonToMap(rootJSON);
                 return response;
             } else {
-                org.bigbluebutton.web.controllers.BigBlueButtonService.log.debug("doAPICall.HTTPERROR: Message=" + "BBB server responded with HTTP status code " + responseCode);
+                log.debug "doAPICall.HTTPERROR: Message=" + "BBB server responded with HTTP status code " + responseCode
             }
         } catch(IOException e) {
-            org.bigbluebutton.web.controllers.BigBlueButtonService.log.debug("doAPICall.IOException: Message=" + e.getMessage());
+            log.debug "doAPICall.IOException: Message=" + e.getMessage()
         } catch(SAXException e) {
-            org.bigbluebutton.web.controllers.BigBlueButtonService.log.debug("doAPICall.SAXException: Message=" + e.getMessage());
+            log.debug "doAPICall.SAXException: Message=" + e.getMessage()
         } catch(IllegalArgumentException e) {
-            org.bigbluebutton.web.controllers.BigBlueButtonService.log.debug("doAPICall.IllegalArgumentException: Message=" + e.getMessage());
+            log.debug "doAPICall.IllegalArgumentException: Message=" + e.getMessage()
         } catch(Exception e) {
-            org.bigbluebutton.web.controllers.BigBlueButtonService.log.debug("doAPICall.Exception: Message=" + e.getMessage());
+            log.debug 'MIKE ERROR: ' + e
+            log.debug "doAPICall.Exception: Message=" + e.getMessage()
         }
     }
 

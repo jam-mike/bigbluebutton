@@ -27,7 +27,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 public class Proxy {
 
    // API Server Path
-   protected final static String API_SERVERPATH = "/api/";
+   protected final static String API_SERVERPATH = "/bigbluebutton/api/";
 
    // API Calls
    protected final static String APICALL_CREATE = "create";
@@ -113,6 +113,8 @@ public class Proxy {
       url += "".equals(createTime)? "": "&createTime=" + createTime;
       url += "&userID=" + userID;
       url += "&webVoiceConf=" + webVoiceConf;
+      url += "&joinViaHtml5=true";
+      url += "&redirect=true";
 
       url += getCheckSumParameterForQuery(APICALL_JOIN, url);
 

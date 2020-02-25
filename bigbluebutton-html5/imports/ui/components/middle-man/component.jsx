@@ -28,48 +28,28 @@ class MiddleMan extends Component {
   }
 
   handleClick(event) {
-    const fullname = this.state.name;
-    const meetingID = '1234535432';
-    this.setState({ shouldJoin: true });
-    render(this.render(), document.getElementById('app'))
+    const meetingID = new URLSearchParams(location.search).get('meetingID');
+    const fullName = this.state.name;
+    const email = this.state.email;
 
-    const joinUrl = 'http://192.168.86.40/bigbluebutton/api/join?fullName=User+1707771&joinViaHtml5=true&meetingID=random-5346003&password=mp&redirect=true&checksum=88ceec1344a2fe3d548ac7ce3e9dd1cf5cf694e3';
-
-    fetch(joinUrl).then(res => {
-      console.log('shiittt', res)
-      window.top.location = res.url;
-    });
-
-    makeCall('requestJoinURL', { fullname: fullname, meetingID: meetingID });
+    let url = `http://192.168.86.40/bigbluebutton/api/bouncer?meetingID=${meetingID}&fullName=${fullName}&email=${email}`;
+    window.location.replace(url);
+    return false;
   }
 
   render() {
-    // return (
-    // 	<div>
-    // 		<JoinHandler>
-    // 			 <AuthenticatedHandler>
-    // 				 <Subscriptions>
-    // 					 <Base />
-    // 				 </Subscriptions>
-    // 			 </AuthenticatedHandler>
-    // 		 </JoinHandler>
-    // 	</div>
-    // );
-
-
-
     const shouldJoin = window.location.search.indexOf('sessionToken') !== -1;
     if (shouldJoin) {
       return (
-				<div>
-					<JoinHandler>
-					 	<AuthenticatedHandler>
-					 		<Subscriptions>
-					 			<Base />
-					 		</Subscriptions>
-					 	</AuthenticatedHandler>
-					 </JoinHandler>
-				</div>
+         <div>
+            <JoinHandler>
+               <AuthenticatedHandler>
+                  <Subscriptions>
+                     <Base />
+                  </Subscriptions>
+               </AuthenticatedHandler>
+             </JoinHandler>
+         </div>
       )
     } else {
       return (
@@ -91,7 +71,7 @@ class MiddleMan extends Component {
 								defaultValue={this.state.email}
 								onChange={this.handleChange}/>
 
-						<button onClick={this.handleClick}>Join</button>
+						<input type="button" value="Join" onClick={this.handleClick}></input>
 					</form>
 
 				</div>

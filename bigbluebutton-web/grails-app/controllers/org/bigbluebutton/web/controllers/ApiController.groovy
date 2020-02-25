@@ -42,6 +42,7 @@ import org.json.JSONArray
 import org.bigbluebutton.web.services.*
 
 import javax.servlet.ServletRequest
+import java.util.Random
 
 class ApiController {
   private static final Integer SESSION_TIMEOUT = 14400  // 4 hours
@@ -175,10 +176,11 @@ class ApiController {
         ApiErrors errors = new ApiErrors()
 
         String middleManUrl = paramsProcessorUtil.getMiddleManUrl()
-        log.debug "middleman url: " + middleManUrl
+        log.debug "middleman url: " + middleManUrl;
+        log.debug "middleman params: " + params;
 
-        redirect(url: middleManUrl+"?meetingId=random-5346003")
-
+        middleManUrl += "?meetingID=${params.meetingID}"
+        redirect(url: middleManUrl)
     }
 
     /********************************************
@@ -196,20 +198,17 @@ class ApiController {
         log.info 'DEFAULT SERVER URL: ' + apiServ.url
         log.info 'SALT: ' + apiServ.salt
 
-        def params = [
-                "meeting_id": 'random-5346003',
-                "full_name": "User 1707771",
+        def joinParams = [
+                "meetingID": params.meetingID,
+                "fullName": params.fullName,
+                "email": params.email
         ]
         //TODO these params should come in from api request from html5client
-//        String joinUrl = apiServ.getJoinUrl(params, "Lets Jam!", "extended");
-        String joinUrl = apiServ.joinUrl(null, null, null)
+        String joinUrl = apiServ.joinUrl(joinParams, "Lets Jam!", "extended");
 
         log.debug "join url: " + joinUrl
 
-
         redirect(url: joinUrl)
-        log.info("Successfully joined. Sending XML response.");
-
     }
 
 
