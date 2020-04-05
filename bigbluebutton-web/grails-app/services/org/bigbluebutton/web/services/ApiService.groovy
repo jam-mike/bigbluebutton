@@ -233,7 +233,7 @@ class ApiService {
         String userFullName = params.get(Parameter.USER_FULL_NAME)
         String userFirstName = params.get(Parameter.USER_FIRSTNAME)
         String userLastName = params.get(Parameter.USER_LASTNAME)
-        if( userFullName == null || userFullName == "" ){
+        if(userFullName == null || userFullName == ""){
             if (userFirstName != null && userFirstName != "") {
                 userFullName = userFirstName
             }
@@ -425,8 +425,6 @@ class ApiService {
 			httpConnection.setDoOutput(true);
 			httpConnection.setRequestMethod("POST");
 			httpConnection.setRequestProperty("Content-Type", "application/json");
-	        // httpConnection.setRequestProperty("Authorization", auth);
-
 			httpConnection.connect();
 			int responseCode = httpConnection.getResponseCode();
 
@@ -455,9 +453,7 @@ class ApiService {
 					}
 				}
 				httpConnection.disconnect();
-				// Parse response.
-				//log.debug("doAPICall.responseXml: " + xml);
-				//Patch to fix the NaN error
+
 				String stringXml = xml.toString();
 				stringXml = stringXml.replaceAll(">.\\s+?<", "><");
 				JSONObject rootJSON = XML.toJSONObject(stringXml);
@@ -473,7 +469,6 @@ class ApiService {
 		} catch(IllegalArgumentException e) {
 			log.debug "doAPICall.IllegalArgumentException: Message=" + e.getMessage()
 		} catch(Exception e) {
-			log.debug 'MIKE ERROR: ' + e
 			log.debug "doAPICall.Exception: Message=" + e.getMessage()
 		}
 	}
@@ -489,13 +484,12 @@ class ApiService {
 			httpConnection.setDoOutput(true);
 			httpConnection.setRequestMethod("POST");
 			httpConnection.setRequestProperty("Content-Type", "application/json");
-	        httpConnection.setRequestProperty("Authorization", auth);
+			httpConnection.setRequestProperty("Authorization", auth);
 
 			String requestBody = "{\"name\": \"ManMosas\"}";
 			byte[] outputInBytes = requestBody.getBytes("UTF-8");
 			OutputStream os = httpConnection.getOutputStream();
 			os.write( outputInBytes );    
-
 
 			httpConnection.connect();
 			int responseCode = httpConnection.getResponseCode();
@@ -551,10 +545,10 @@ class ApiService {
 
 	public String getOAuthCode(String clientId) {
 		String client = '?client_id=' + clientId
-        String responseType = '&response_type=code'
-        String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
+		String responseType = '&response_type=code'
+		String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
 
-		return 'https://test.salesforce.com/services/oauth2/authorize' + client + responseType + redirectUri
+		return 'https://login.salesforce.com/services/oauth2/authorize' + client + responseType + redirectUri
 	}
 
     public String getOAuthRefreshToken(String clientId, String clientSecret, String authToken) {
@@ -586,16 +580,16 @@ class ApiService {
         String grantType = '&grant_type=refresh_token'
         String token = '&refresh_token=' + refreshToken
 
-		String requestUrl = 'https://test.salesforce.com/services/oauth2/token' + client + grantType + token
+		String requestUrl = 'https://login.salesforce.com/services/oauth2/token' + client + grantType + token
 
 		log.debug 'Getting access token from refresh token: ' + requestUrl
 
 		URL postUrl = new URL(requestUrl);
-        HttpURLConnection httpConnection = (HttpURLConnection) postUrl.openConnection();
-        httpConnection.setUseCaches(false);
-        httpConnection.setDoOutput(true);
-        httpConnection.setRequestMethod("POST");
-        httpConnection.setRequestProperty("Content-Type", "application/json");
+		HttpURLConnection httpConnection = (HttpURLConnection) postUrl.openConnection();
+		httpConnection.setUseCaches(false);
+		httpConnection.setDoOutput(true);
+		httpConnection.setRequestMethod("POST");
+		httpConnection.setRequestProperty("Content-Type", "application/json");
 		httpConnection.connect();
 
 		BufferedReader br = new BufferedReader(new InputStreamReader((httpConnection.getInputStream())));
@@ -615,53 +609,53 @@ class ApiService {
 	private String buildOAuthUrl(String clientId,String clientSecret, String authToken) {
 		String client = 'client_id=' + clientId
 		String secret = '&client_secret=' + clientSecret
-        String grantType = '&grant_type=authorization_code'
-        String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
+		String grantType = '&grant_type=authorization_code'
+		String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
 		String code = '&code=' + authToken
 		
-		String request = 'https://test.salesforce.com/services/oauth2/token?' + client + secret + grantType + redirectUri + code
+		String request = 'https://login.salesforce.com/services/oauth2/token?' + client + secret + grantType + redirectUri + code
 		log.info 'REQUESTED URL: ' + request
 		return request
 	}
 
     protected Map<String, Object> jsonToMap(JSONObject json) throws JSONException {
-        Map<String, Object> retMap = new HashMap<String, Object>();
-        if(json != JSONObject.NULL) {
-            retMap = toMap(json);
-        }
-        return retMap;
+		Map<String, Object> retMap = new HashMap<String, Object>();
+		if(json != JSONObject.NULL) {
+		    retMap = toMap(json);
+		}
+		return retMap;
     }
 
     protected Map<String, Object> toMap(JSONObject object) throws JSONException {
-        Map<String, Object> map = new HashMap<String, Object>();
-        Iterator<String> keysItr = object.keys();
-        while(keysItr.hasNext()) {
-            String key = keysItr.next();
-            Object value = object.get(key);
-            if(value instanceof JSONArray) {
-                value = toList((JSONArray) value);
-            }
-            else if(value instanceof JSONObject) {
-                value = toMap((JSONObject) value);
-            }
-            map.put(key, value);
-        }
-        return map;
+		Map<String, Object> map = new HashMap<String, Object>();
+		Iterator<String> keysItr = object.keys();
+		while(keysItr.hasNext()) {
+		    String key = keysItr.next();
+		    Object value = object.get(key);
+		    if(value instanceof JSONArray) {
+				value = toList((JSONArray) value);
+		    }
+		    else if(value instanceof JSONObject) {
+				value = toMap((JSONObject) value);
+		    }
+		    map.put(key, value);
+		}
+		return map;
     }
 
     protected List<Object> toList(JSONArray array) throws JSONException {
-        List<Object> list = new ArrayList<Object>();
-        for(int i = 0; i < array.length(); i++) {
-            Object value = array.get(i);
-            if(value instanceof JSONArray) {
-                value = toList((JSONArray) value);
-            }
-            else if(value instanceof JSONObject) {
-                value = toMap((JSONObject) value);
-            }
-            list.add(value);
-        }
-        return list;
+		List<Object> list = new ArrayList<Object>();
+		for(int i = 0; i < array.length(); i++) {
+		    Object value = array.get(i);
+		    if(value instanceof JSONArray) {
+				value = toList((JSONArray) value);
+		    }
+		    else if(value instanceof JSONObject) {
+				value = toMap((JSONObject) value);
+		    }
+		    list.add(value);
+		}
+		return list;
     }
 
     /**
@@ -669,17 +663,17 @@ class ApiService {
      * If none are specified, fallback to using resource_link_id and oauth_consumer_key
      */
     private String getParamsForMeetingId(params) {
-        String[] paramArray = idParams.split(",");
-        String result = "";
-        for(String s : paramArray) {
-            if(params.get(s) != null) {
-                result += params.get(s);
-            }
-        }
-        // If we can't get anything from config, fallback to old way
-        if(result.equals("")) {
-            result = params.get(Parameter.RESOURCE_LINK_ID) + params.get(Parameter.CONSUMER_ID);
-        }
-        return result;
+		String[] paramArray = idParams.split(",");
+		String result = "";
+		for(String s : paramArray) {
+		    if(params.get(s) != null) {
+				result += params.get(s);
+		    }
+		}
+		// If we can't get anything from config, fallback to old way
+		if(result.equals("")) {
+		    result = params.get(Parameter.RESOURCE_LINK_ID) + params.get(Parameter.CONSUMER_ID);
+		}
+		return result;
     }
 }

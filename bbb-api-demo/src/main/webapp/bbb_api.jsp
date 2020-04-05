@@ -145,9 +145,6 @@ public String getJoinMeetingURL(String username, String meetingID, String passwo
 		+ "&fullName=" + urlEncode(username) + "&password="
 		+ urlEncode(password) + "&guest=" + urlEncode(guest.toString()) +  clientURL_param;
 
-	log.debug('MIKEKEEEEE')
-	log.debug(base_url_join + join_parameters + "&checksum="
-            + checksum("join" + join_parameters + salt));
 	return base_url_join + join_parameters + "&checksum="
 		+ checksum("join" + join_parameters + salt);
 } 

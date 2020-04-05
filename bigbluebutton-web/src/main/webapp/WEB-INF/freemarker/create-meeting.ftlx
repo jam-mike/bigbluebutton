@@ -17,6 +17,5 @@
     <hasBeenForciblyEnded>${meeting.isForciblyEnded()?c}</hasBeenForciblyEnded>
     <messageKey>${msgKey!}</messageKey>
     <message>${msg!}</message>
-	 <bigTest>We in here, babaaayyy!</bigTest>
 </response>
 </#compress>

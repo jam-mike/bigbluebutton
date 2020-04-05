@@ -160,22 +160,13 @@ class ApiController {
       String internalMeetingId = paramsProcessorUtil.convertToInternalMeetingId(params.meetingID);
       Meeting existing = meetingService.getNotEndedMeetingWithId(internalMeetingId);
       if (existing != null) {
-        log.debug "Existing conference found"
-		log.debug "MIKE AttendeePW: " + params.get("attendeePW");
-		log.debug "MIKE EXPECTED ATTPW: " + existing.getViewerPassword()
-		log.debug "mike actual mod pw " + params.get("moderatorPW")
-		log.debug "MIKE mod pw" + existing.getModeratorPassword()
         Map<String, Object> updateParams = paramsProcessorUtil.processUpdateCreateParams(params);
         if (existing.getViewerPassword().equals(params.get("attendeePW")) && 
-			(existing.getModeratorPassword().equals(params.get("moderatorPW")) || params.get("moderatorPW") == "null")) {
-				log.debug "MIKE WTF"
-          //paramsProcessorUtil.updateMeeting(updateParams, existing);
-          // trying to create a conference a second time, return success, but give extra info
-          // Ignore pre-uploaded presentations. We only allow uploading of presentation once.
-          //uploadDocuments(existing);
+			(existing.getModeratorPassword().equals(params.get("moderatorPW")) || 
+			params.get("moderatorPW") == "null")
+		) {
           respondWithConference(existing, "duplicateWarning", "This conference was already in existence and may currently be in progress.");
         } else {
-			log.debug "--MIKE-- Existing error: " + params.get("moderatorPW")
           // BEGIN - backward compatibility
           invalid("idNotUnique", "A meeting already exists with that meeting ID.  Please use a different meeting ID.");
           return
@@ -200,49 +191,36 @@ class ApiController {
         ApiErrors errors = new ApiErrors()
 
         String middleManUrl = paramsProcessorUtil.getMiddleManUrl()
-        log.debug "middleman url: " + middleManUrl;
-        log.debug "middleman params: " + params;
 
         middleManUrl += "?meetingID=${params.meetingID}&target=${params.target}"
         redirect(url: middleManUrl)
 
-		// if (target != null && ClientMappings.salesforce.get(target) != null) {
+
+		/* TODO THIS CODE SHOULD BE MOVED OUT OF MIDDLEMAN TO ADMIN AUTH
+		if (target != null && ClientMappings.salesforce.get(target) != null) {
 			
-			// ApiService apiServ = new ApiService(paramsProcessorUtil);
-			// def val = apiServ.getRefreshToken(target);
+			ApiService apiServ = new ApiService(paramsProcessorUtil);
+			def val = apiServ.getRefreshToken(target);
 
-			// log.debug 'MIKE RESPONSE: ' + val
-			//TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
-			//If it is null, we need to do the full OAuth Ceremony
+			log.debug 'MIKE RESPONSE: ' + val
+			TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
+			If it is null, we need to do the full OAuth Ceremony
 
-			//TODO create a SF api to log when user has joined meeting.
+			TODO create a SF api to log when user has joined meeting.
 
-	        // def request = apiServ.getOAuthCode(
-			// 	client.get('client_id')
-			// );
+	        def request = apiServ.getOAuthCode(
+				client.get('client_id')
+			);
 
-			// log.debug 'INITIAL REQUEST: ' + request
+			log.debug 'INITIAL REQUEST: ' + request
 
-			// redirect(uri: request)
-		//}
-        
-        
-        
-
-        // CREATE CONNECTED APP IN SF, REST CALL IN TO GET PASSWORD AND VALIDATE MODERATOR
-        // PASSWORD AGAINST PASSWORD SET IN ORG BEFORE ALLOWING PARTICIPANT TO JOIN
+			redirect(uri: request)
+		} */
     }
 
 	def oauthCallback() {
-
-		log.debug 'OAUTH CALLBACK RECEIVED'
 		String code = params.code
-
-		log.debug 'MIKE OAUTH CODE: ' + code
-
 		def origin = request.getHeader('referer')
-		log.debug 'MIKE request headers ' + origin
-
 
 		def salesforceClient
 		def target
@@ -259,8 +237,6 @@ class ApiController {
 				}	
 			}
 		}
-
-		
 
 		ApiService apiServ = new ApiService(paramsProcessorUtil);	
 
@@ -295,10 +271,6 @@ class ApiController {
 
 		String restRequestUrl = data.get('instanceUrl') + '/services/apexrest/meeting/log'
 		apiServ.makeSFCall(restRequestUrl, data.get('accessToken'));
-
-		//TODO push refresh_token into ClientMappings
-		//
-		//redirect(url: 'http://192.168.86.40/b');
 	}
 
     /********************************************
@@ -314,19 +286,14 @@ class ApiController {
         ApiService apiServ = new ApiService(paramsProcessorUtil);
 		def mapping = ClientMappings.salesforce.get(params.target)
 
-        log.info 'DEFAULT SERVER URL: ' + apiServ.url
-        log.info 'SALT: ' + apiServ.salt
-
-
         def joinParams = [
                 "meetingID": params.meetingID,
-                "fullName": params.fullName,
+                "full_name": params.full_name,
                 "email": params.email,
 				"moderatorPW": params.moderatorPW,
 				"attendeePW": "ap",
 				"target": params.target
         ]
-        //TODO these params should come in from api request from html5client
         String joinUrl = apiServ.joinUrl(joinParams, "Lets Jam!", "extended");
 
         log.debug "join url: " + joinUrl
@@ -626,7 +593,7 @@ class ApiController {
     boolean redirectClient = true;
     String clientURL = paramsProcessorUtil.getDefaultClientUrl();
 
-	joinViaHtml5 = true
+    joinViaHtml5 = true
     // server-wide configuration:
     // Depending on configuration, prefer the HTML5 client over Flash for moderators
 
@@ -662,8 +629,6 @@ class ApiController {
     // Process if we send the user directly to the client or
     // have it wait for approval.
     String destUrl = clientURL + "?sessionToken=" + sessionToken
-
-
     if (guestStatusVal.equals(GuestPolicy.WAIT)) {
       String guestWaitUrl = paramsProcessorUtil.getDefaultGuestWaitURL();
       destUrl = guestWaitUrl + "?sessionToken=" + sessionToken
