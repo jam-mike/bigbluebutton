@@ -118,7 +118,8 @@ with BigBlueButton; if not, see <http://www.gnu.org/licenses/>.
         <property name="defaultGuestWaitURL" value="${defaultGuestWaitURL}"/>
         <property name="html5ClientUrl" value="${html5ClientUrl}"/>
 		<property name="middleManUrl" value="${middleManUrl}" />
-		<property name="bouncerUrl" value="${bouncerUrl}" />
+        <property name="bouncerUrl" value="${bouncerUrl}" />
+        <property name="oauthCallback" value="${oauthCallback}" />
         <property name="allowRequestsWithoutSession" value="${allowRequestsWithoutSession}"/>
         <property name="moderatorsJoinViaHTML5Client" value="${moderatorsJoinViaHTML5Client}"/>
         <property name="attendeesJoinViaHTML5Client" value="${attendeesJoinViaHTML5Client}"/>

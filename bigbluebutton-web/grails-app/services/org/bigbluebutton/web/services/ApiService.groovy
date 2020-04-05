@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.bigbluebutton.web.ClientMappings
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -51,6 +53,8 @@ import org.bigbluebutton.api.ParamsProcessorUtil
 import org.bigbluebutton.web.services.Proxy
 import org.bigbluebutton.web.services.Role
 import org.bigbluebutton.web.services.Parameter
+import org.bigbluebutton.web.UrlMappings
+import groovy.json.JsonSlurper
 
 class ApiService {
 
@@ -91,8 +95,8 @@ class ApiService {
 
         String meetingName = getValidatedMeetingName(params.get(Parameter.RESOURCE_LINK_TITLE))
         String meetingID = getValidatedMeetingId(getParamsForMeetingId(params))
-        String attendeePW = DigestUtils.shaHex("ap" + params.get(Parameter.RESOURCE_LINK_ID) + params.get(Parameter.CONSUMER_ID))
-        String moderatorPW = Parameter.MODERATOR_PASSWORD
+        String attendeePW = params.get('attendeePW')
+        String moderatorPW = params.get('moderatorPW') || ClientMappings.salesforce.get(params.target).get("moderatorPW")
         String logoutURL = getValidatedLogoutURL(params.get(Parameter.LAUNCH_RETURN_URL))
         boolean isModerator = isModerator(params)
         String userFullName = getValidatedUserFullName(params, isModerator)
@@ -114,9 +118,7 @@ class ApiService {
         String welcomeMsg = MessageFormat.format(welcome, values)
         String meta = getMonitoringMetaData(params)
         String createURL = getCreateURL(meetingName, meetingID, attendeePW, moderatorPW, welcomeMsg, voiceBridge, logoutURL, record, duration, meta)
-        log.debug "createURL MIKE: " + createURL
         Map<String, Object> responseAPICall = doAPICall(createURL)
-        log.info "responseAPICall: " + responseAPICall
         if (responseAPICall == null) {
             return null
         }
@@ -124,7 +126,6 @@ class ApiService {
         String returnCode = (String)response.get("returncode")
         String messageKey = (String)response.get("messageKey")
         if (!Proxy.APIRESPONSE_SUCCESS.equals(returnCode) ||
-                !Proxy.MESSAGEKEY_IDNOTUNIQUE.equals(messageKey) &&
                 !Proxy.MESSAGEKEY_DUPLICATEWARNING.equals(messageKey) &&
                 !"".equals(messageKey)) {
             return null
@@ -198,10 +199,15 @@ class ApiService {
     }
 
     boolean isModerator(params) {
-        boolean isModerator = params.get(Parameter.ROLES) != null? Role.isModerator(params.get(Parameter.ROLES)): true
         //TODO: this needs to be changed to compare the moderatorPW to the meetingId moderatorPW
-        isModerator = isModerator || params.get(MODERATOR_PASSWORD) == "mp"
-        return isModerator
+		if (params.get('moderatorPW') == null) {
+			return false
+		} 
+		def salesforceClient = ClientMappings.salesforce.get(params.target);
+		if (params.get('moderatorPW') == salesforceClient.get('moderatorPW')) {
+			return true
+		} 
+		throw new Exception("Invalid Moderator Password")
     }
 
     private String getCreateURL(String name, String meetingID, String attendeePW, String moderatorPW, String welcome, Integer voiceBridge, String logoutURL, String record, Integer duration, String meta ) {
@@ -288,7 +294,6 @@ class ApiService {
         StringBuilder urlStr = new StringBuilder(query);
         try {
             // open connection
-            log.debug "doAPICall.call: " + query
             URL url = new URL(urlStr.toString());
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setUseCaches(false);
@@ -296,15 +301,17 @@ class ApiService {
             httpConnection.setRequestMethod("GET");
             httpConnection.connect();
             int responseCode = httpConnection.getResponseCode();
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 // read response
-                InputStreamReader isr = null;
-                BufferedReader reader = null;
+				InputStreamReader isr;
+				BufferedReader reader;
                 StringBuilder xml = new StringBuilder();
                 try {
                     isr = new InputStreamReader(httpConnection.getInputStream(), "UTF-8");
                     reader = new BufferedReader(isr);
                     String line = reader.readLine();
+					
                     while (line != null) {
                         if( !line.startsWith("<?xml version=\"1.0\"?>")) {
                             xml.append(line.trim());
@@ -342,6 +349,280 @@ class ApiService {
             log.debug "doAPICall.Exception: Message=" + e.getMessage()
         }
     }
+
+	public String getRefreshToken(String clientName) {
+
+		String query = 'https://ptu21cf23f.execute-api.us-east-1.amazonaws.com/prod/jamauth/getToken';
+		query += '?id=' + clientName 
+		try {
+			// open connection
+			log.debug "doAPICall.call: " + query
+			URL url = new URL(query);
+			HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+			httpConnection.setUseCaches(false);
+			httpConnection.setDoOutput(true);
+			httpConnection.setRequestMethod("GET");
+			httpConnection.setRequestProperty("Content-Type", "application/json");
+	        // httpConnection.setRequestProperty("Authorization", auth);
+
+			httpConnection.connect();
+			int responseCode = httpConnection.getResponseCode();
+
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				// read response
+				InputStreamReader isr = null;
+				BufferedReader reader = null;
+				StringBuilder xml = new StringBuilder();
+				String response;
+				try {
+					isr = new InputStreamReader(httpConnection.getInputStream(), "UTF-8");
+					reader = new BufferedReader(isr);
+					response = reader.readLine();
+					return response;
+					
+					while (response != null) {
+						response = reader.readLine();
+					}
+				} finally {
+					if (reader != null) {
+						reader.close();
+					}
+					if (isr != null) {
+						isr.close();
+					}
+				}
+				httpConnection.disconnect();
+				return response;
+			} else {
+				log.debug "doAPICall.HTTPERROR: Message=" + "BBB server responded with HTTP status code " + responseCode
+			}
+		} catch(IOException e) {
+			log.debug "doAPICall.IOException: Message=" + e.getMessage()
+		} catch(SAXException e) {
+			log.debug "doAPICall.SAXException: Message=" + e.getMessage()
+		} catch(IllegalArgumentException e) {
+			log.debug "doAPICall.IllegalArgumentException: Message=" + e.getMessage()
+		} catch(Exception e) {
+			log.debug 'MIKE ERROR: ' + e
+			log.debug "doAPICall.Exception: Message=" + e.getMessage()
+		}
+	}
+
+	public String storeRefreshToken(
+		String clientName, 
+		String clientId, 
+		String clientSecret, 
+		String token
+	) {
+		String query = 'https://ptu21cf23f.execute-api.us-east-1.amazonaws.com/prod/jamauth/storeToken';
+		query += '?id=' + clientName + '&key=' + clientId + '&secret=' + clientSecret + '&token=' + token;
+		try {
+			// open connection
+			log.debug "doAPICall.call: " + query
+			URL url = new URL(query);
+			HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+			httpConnection.setUseCaches(false);
+			httpConnection.setDoOutput(true);
+			httpConnection.setRequestMethod("POST");
+			httpConnection.setRequestProperty("Content-Type", "application/json");
+	        // httpConnection.setRequestProperty("Authorization", auth);
+
+			httpConnection.connect();
+			int responseCode = httpConnection.getResponseCode();
+
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				// read response
+				InputStreamReader isr = null;
+				BufferedReader reader = null;
+				StringBuilder xml = new StringBuilder();
+				try {
+					isr = new InputStreamReader(httpConnection.getInputStream(), "UTF-8");
+					reader = new BufferedReader(isr);
+					String line = reader.readLine();
+					
+					while (line != null) {
+						if( !line.startsWith("<?xml version=\"1.0\"?>")) {
+						    xml.append(line.trim());
+						}
+						line = reader.readLine();
+					}
+				} finally {
+					if (reader != null) {
+						reader.close();
+					}
+					if (isr != null) {
+						isr.close();
+					}
+				}
+				httpConnection.disconnect();
+				// Parse response.
+				//log.debug("doAPICall.responseXml: " + xml);
+				//Patch to fix the NaN error
+				String stringXml = xml.toString();
+				stringXml = stringXml.replaceAll(">.\\s+?<", "><");
+				JSONObject rootJSON = XML.toJSONObject(stringXml);
+				Map<String, Object> response = jsonToMap(rootJSON);
+				return response;
+			} else {
+				log.debug "doAPICall.HTTPERROR: Message=" + "BBB server responded with HTTP status code " + responseCode
+			}
+		} catch(IOException e) {
+			log.debug "doAPICall.IOException: Message=" + e.getMessage()
+		} catch(SAXException e) {
+			log.debug "doAPICall.SAXException: Message=" + e.getMessage()
+		} catch(IllegalArgumentException e) {
+			log.debug "doAPICall.IllegalArgumentException: Message=" + e.getMessage()
+		} catch(Exception e) {
+			log.debug 'MIKE ERROR: ' + e
+			log.debug "doAPICall.Exception: Message=" + e.getMessage()
+		}
+	}
+
+	public String makeSFCall(String query, String accessToken) {
+		String auth = 'Bearer ' + accessToken;
+		try {
+			// open connection
+			log.debug "doAPICall.call: " + query
+			URL url = new URL(query);
+			HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+			httpConnection.setUseCaches(false);
+			httpConnection.setDoOutput(true);
+			httpConnection.setRequestMethod("POST");
+			httpConnection.setRequestProperty("Content-Type", "application/json");
+	        httpConnection.setRequestProperty("Authorization", auth);
+
+			String requestBody = "{\"name\": \"ManMosas\"}";
+			byte[] outputInBytes = requestBody.getBytes("UTF-8");
+			OutputStream os = httpConnection.getOutputStream();
+			os.write( outputInBytes );    
+
+
+			httpConnection.connect();
+			int responseCode = httpConnection.getResponseCode();
+
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				// read response
+				InputStreamReader isr = null;
+				BufferedReader reader = null;
+				StringBuilder xml = new StringBuilder();
+				try {
+					isr = new InputStreamReader(httpConnection.getInputStream(), "UTF-8");
+					reader = new BufferedReader(isr);
+					String line = reader.readLine();
+					
+					while (line != null) {
+						if( !line.startsWith("<?xml version=\"1.0\"?>")) {
+						    xml.append(line.trim());
+						}
+						line = reader.readLine();
+					}
+				} finally {
+					if (reader != null) {
+						reader.close();
+					}
+					if (isr != null) {
+						isr.close();
+					}
+				}
+				httpConnection.disconnect();
+				// Parse response.
+				//log.debug("doAPICall.responseXml: " + xml);
+				//Patch to fix the NaN error
+				String stringXml = xml.toString();
+				stringXml = stringXml.replaceAll(">.\\s+?<", "><");
+				JSONObject rootJSON = XML.toJSONObject(stringXml);
+				Map<String, Object> response = jsonToMap(rootJSON);
+				return response;
+			} else {
+				log.debug "doAPICall.HTTPERROR: Message=" + "BBB server responded with HTTP status code " + responseCode
+			}
+		} catch(IOException e) {
+			log.debug "doAPICall.IOException: Message=" + e.getMessage()
+		} catch(SAXException e) {
+			log.debug "doAPICall.SAXException: Message=" + e.getMessage()
+		} catch(IllegalArgumentException e) {
+			log.debug "doAPICall.IllegalArgumentException: Message=" + e.getMessage()
+		} catch(Exception e) {
+			log.debug "doAPICall.Exception: Message=" + e.getMessage()
+		}
+	}
+
+	private static String getOauthCallback() { return 'https://071c173e.ngrok.io/bigbluebutton/api/oauthCallback'; }
+
+	public String getOAuthCode(String clientId) {
+		String client = '?client_id=' + clientId
+        String responseType = '&response_type=code'
+        String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
+
+		return 'https://test.salesforce.com/services/oauth2/authorize' + client + responseType + redirectUri
+	}
+
+    public String getOAuthRefreshToken(String clientId, String clientSecret, String authToken) {
+        String request = buildOAuthUrl(clientId, clientSecret, authToken)
+
+        URL postUrl = new URL(request);
+        HttpURLConnection httpConnection = (HttpURLConnection) postUrl.openConnection();
+        httpConnection.setUseCaches(false);
+        httpConnection.setDoOutput(true);
+        httpConnection.setRequestMethod("POST");
+        httpConnection.setRequestProperty("Content-Type", "application/json");
+		httpConnection.connect();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader((httpConnection.getInputStream())));
+		StringBuilder sb = new StringBuilder();
+		String output;
+		while ((output = br.readLine()) != null) {
+			sb.append(output);
+		}
+		String response = sb.toString()
+		def jsonSlurp = new JsonSlurper()
+		def responseObj = jsonSlurp.parseText(response);
+		
+		return responseObj.refresh_token
+    }
+
+	def getOAuthAccessToken(String clientId, String clientSecret, String refreshToken) {
+		String client = '?client_id=' + clientId + '&client_secret=' + clientSecret
+        String grantType = '&grant_type=refresh_token'
+        String token = '&refresh_token=' + refreshToken
+
+		String requestUrl = 'https://test.salesforce.com/services/oauth2/token' + client + grantType + token
+
+		log.debug 'Getting access token from refresh token: ' + requestUrl
+
+		URL postUrl = new URL(requestUrl);
+        HttpURLConnection httpConnection = (HttpURLConnection) postUrl.openConnection();
+        httpConnection.setUseCaches(false);
+        httpConnection.setDoOutput(true);
+        httpConnection.setRequestMethod("POST");
+        httpConnection.setRequestProperty("Content-Type", "application/json");
+		httpConnection.connect();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader((httpConnection.getInputStream())));
+		StringBuilder sb = new StringBuilder();
+		String output;
+		while ((output = br.readLine()) != null) {
+			sb.append(output);
+		}
+		String response = sb.toString()
+		def jsonSlurp = new JsonSlurper()
+		def responseObj = jsonSlurp.parseText(response);
+		
+		return ['accessToken': responseObj.access_token, 'instanceUrl': responseObj.instance_url]
+
+	}
+
+	private String buildOAuthUrl(String clientId,String clientSecret, String authToken) {
+		String client = 'client_id=' + clientId
+		String secret = '&client_secret=' + clientSecret
+        String grantType = '&grant_type=authorization_code'
+        String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
+		String code = '&code=' + authToken
+		
+		String request = 'https://test.salesforce.com/services/oauth2/token?' + client + secret + grantType + redirectUri + code
+		log.info 'REQUESTED URL: ' + request
+		return request
+	}
 
     protected Map<String, Object> jsonToMap(JSONObject json) throws JSONException {
         Map<String, Object> retMap = new HashMap<String, Object>();

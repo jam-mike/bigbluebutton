@@ -12,6 +12,7 @@ class MiddleMan extends Component {
     this.state = {
       name: '',
       email: '',
+      moderatorPW: '',
       shouldJoin: false
     };
 
@@ -22,17 +23,27 @@ class MiddleMan extends Component {
   handleChange(event) {
     const nameUpdate = { name: event.target.value };
     const emailUpdate = { email: event.target.value };
-
-    const newState = event.target.name == 'Full Name' ? nameUpdate : emailUpdate;
-    this.setState(newState);
+	const modPWUpdate = { moderatorPW: event.target.value };
+	
+	if (event.target.name === 'Full Name') {
+		this.setState(nameUpdate);
+	} else if (event.target.name == 'Email') {
+		this.setState(emailUpdate);
+	} else if (event.target.name == 'ModeratorPW') {
+		this.setState(modPWUpdate);
+	}
   }
 
   handleClick(event) {
-    const meetingID = new URLSearchParams(location.search).get('meetingID');
+	const params = new URLSearchParams(location.search);
+	const meetingID = params.get('meetingID');
+	const target = params.get('target');
     const fullName = this.state.name;
     const email = this.state.email;
+	const moderatorPW = this.state.moderatorPW;
 
-    let url = `http://192.168.86.40/bigbluebutton/api/bouncer?meetingID=${meetingID}&fullName=${fullName}&email=${email}`;
+	let url = `${window.location.origin}/bigbluebutton/api/bouncer?meetingID=${meetingID}&fullName=${fullName}&email=${email}&target=${target}`;
+	if (moderatorPW) url += `&moderatorPW=${moderatorPW}`;
     window.location.replace(url);
     return false;
   }
@@ -41,7 +52,7 @@ class MiddleMan extends Component {
     const shouldJoin = window.location.search.indexOf('sessionToken') !== -1;
     if (shouldJoin) {
       return (
-         <div>
+         <div> 
             <JoinHandler>
                <AuthenticatedHandler>
                   <Subscriptions>
@@ -70,6 +81,13 @@ class MiddleMan extends Component {
 								type="text"
 								defaultValue={this.state.email}
 								onChange={this.handleChange}/>
+
+						Moderator Password:
+                     <input
+                        name="ModeratorPW"
+                        type="text"
+                        defaultValue={this.state.moderatorPW}
+                        onChange={this.handleChange}/>
 
 						<input type="button" value="Join" onClick={this.handleClick}></input>
 					</form>

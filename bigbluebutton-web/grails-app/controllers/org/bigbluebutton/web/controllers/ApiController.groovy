@@ -33,6 +33,7 @@ import org.bigbluebutton.api.domain.UserSession
 import org.bigbluebutton.api.util.ResponseBuilder
 import org.bigbluebutton.presentation.PresentationUrlDownloadService
 import org.bigbluebutton.presentation.UploadedPresentation
+import org.bigbluebutton.web.ClientMappings
 import org.bigbluebutton.web.services.PresentationService
 import org.bigbluebutton.web.services.turn.StunTurnService
 import org.bigbluebutton.web.services.turn.TurnEntry
@@ -84,6 +85,22 @@ class ApiController {
         render(text: responseBuilder.buildMeetingVersion(paramsProcessorUtil.getApiVersion(), RESP_CODE_SUCCESS), contentType: "text/xml")
       }
     }
+  }
+
+  def adminAuth = {
+	  if (params.target) {
+		def mapping = ClientMappings.salesforce.get(params.target)
+
+		if (mapping != null) {
+			def domain = mapping.get('domain')
+			def consumerKey = mapping.get('client_id')
+			
+			ApiService apiServ = new ApiService(paramsProcessorUtil)
+			def requestUrl = apiServ.adminAuth(domain, consumerKey, params.target)
+
+			redirect(uri: requestUrl)
+		}
+	  }
   }
 
   /***********************************
@@ -144,14 +161,21 @@ class ApiController {
       Meeting existing = meetingService.getNotEndedMeetingWithId(internalMeetingId);
       if (existing != null) {
         log.debug "Existing conference found"
+		log.debug "MIKE AttendeePW: " + params.get("attendeePW");
+		log.debug "MIKE EXPECTED ATTPW: " + existing.getViewerPassword()
+		log.debug "mike actual mod pw " + params.get("moderatorPW")
+		log.debug "MIKE mod pw" + existing.getModeratorPassword()
         Map<String, Object> updateParams = paramsProcessorUtil.processUpdateCreateParams(params);
-        if (existing.getViewerPassword().equals(params.get("attendeePW")) && existing.getModeratorPassword().equals(params.get("moderatorPW"))) {
+        if (existing.getViewerPassword().equals(params.get("attendeePW")) && 
+			(existing.getModeratorPassword().equals(params.get("moderatorPW")) || params.get("moderatorPW") == "null")) {
+				log.debug "MIKE WTF"
           //paramsProcessorUtil.updateMeeting(updateParams, existing);
           // trying to create a conference a second time, return success, but give extra info
           // Ignore pre-uploaded presentations. We only allow uploading of presentation once.
           //uploadDocuments(existing);
           respondWithConference(existing, "duplicateWarning", "This conference was already in existence and may currently be in progress.");
         } else {
+			log.debug "--MIKE-- Existing error: " + params.get("moderatorPW")
           // BEGIN - backward compatibility
           invalid("idNotUnique", "A meeting already exists with that meeting ID.  Please use a different meeting ID.");
           return
@@ -179,9 +203,103 @@ class ApiController {
         log.debug "middleman url: " + middleManUrl;
         log.debug "middleman params: " + params;
 
-        middleManUrl += "?meetingID=${params.meetingID}"
+        middleManUrl += "?meetingID=${params.meetingID}&target=${params.target}"
         redirect(url: middleManUrl)
+
+		// if (target != null && ClientMappings.salesforce.get(target) != null) {
+			
+			// ApiService apiServ = new ApiService(paramsProcessorUtil);
+			// def val = apiServ.getRefreshToken(target);
+
+			// log.debug 'MIKE RESPONSE: ' + val
+			//TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
+			//If it is null, we need to do the full OAuth Ceremony
+
+			//TODO create a SF api to log when user has joined meeting.
+
+	        // def request = apiServ.getOAuthCode(
+			// 	client.get('client_id')
+			// );
+
+			// log.debug 'INITIAL REQUEST: ' + request
+
+			// redirect(uri: request)
+		//}
+        
+        
+        
+
+        // CREATE CONNECTED APP IN SF, REST CALL IN TO GET PASSWORD AND VALIDATE MODERATOR
+        // PASSWORD AGAINST PASSWORD SET IN ORG BEFORE ALLOWING PARTICIPANT TO JOIN
     }
+
+	def oauthCallback() {
+
+		log.debug 'OAUTH CALLBACK RECEIVED'
+		String code = params.code
+
+		log.debug 'MIKE OAUTH CODE: ' + code
+
+		def origin = request.getHeader('referer')
+		log.debug 'MIKE request headers ' + origin
+
+
+		def salesforceClient
+		def target
+
+		//assume mimeo for dev mode
+		if (origin == null) {
+			salesforceClient = ClientMappings.salesforce.get('mimeo')
+			origin = salesforceClient.get('domain')
+		} else {
+			ClientMappings.salesforce.each {key, val -> 
+				if (val.get('domain') == origin) {
+					target = key
+					salesforceClient = val
+				}	
+			}
+		}
+
+		
+
+		ApiService apiServ = new ApiService(paramsProcessorUtil);	
+
+		String refreshToken = apiServ.getOAuthRefreshToken(
+			salesforceClient.get('client_id'),
+			salesforceClient.get('client_secret'),
+			params.code
+		);
+
+		def client = ClientMappings.salesforce.get(target)
+
+		log.debug 'CALLING AWS API'
+		apiServ.storeRefreshToken(
+			target, 
+			salesforceClient.get('client_id'), 
+			salesforceClient.get('client_secret'),
+			refreshToken
+		)
+
+		//this needs to be saved to db
+		salesforceClient.put('refresh_token', refreshToken)
+
+		log.debug 'refresh token about to get access' + refreshToken
+
+		def data = apiServ.getOAuthAccessToken(
+			salesforceClient.get('client_id'),
+			salesforceClient.get('client_secret'),
+			refreshToken
+		);
+
+		log.debug 'MIKE GOT ACCESS TOKEN: ' + data
+
+		String restRequestUrl = data.get('instanceUrl') + '/services/apexrest/meeting/log'
+		apiServ.makeSFCall(restRequestUrl, data.get('accessToken'));
+
+		//TODO push refresh_token into ClientMappings
+		//
+		//redirect(url: 'http://192.168.86.40/b');
+	}
 
     /********************************************
      * bouncer
@@ -194,14 +312,19 @@ class ApiController {
         ApiErrors errors = new ApiErrors()
 
         ApiService apiServ = new ApiService(paramsProcessorUtil);
+		def mapping = ClientMappings.salesforce.get(params.target)
 
         log.info 'DEFAULT SERVER URL: ' + apiServ.url
         log.info 'SALT: ' + apiServ.salt
 
+
         def joinParams = [
                 "meetingID": params.meetingID,
                 "fullName": params.fullName,
-                "email": params.email
+                "email": params.email,
+				"moderatorPW": params.moderatorPW,
+				"attendeePW": "ap",
+				"target": params.target
         ]
         //TODO these params should come in from api request from html5client
         String joinUrl = apiServ.joinUrl(joinParams, "Lets Jam!", "extended");
@@ -503,16 +626,9 @@ class ApiController {
     boolean redirectClient = true;
     String clientURL = paramsProcessorUtil.getDefaultClientUrl();
 
+	joinViaHtml5 = true
     // server-wide configuration:
     // Depending on configuration, prefer the HTML5 client over Flash for moderators
-    if (paramsProcessorUtil.getModeratorsJoinViaHTML5Client() && role == ROLE_MODERATOR) {
-      joinViaHtml5 = true
-    }
-
-    // Depending on configuration, prefer the HTML5 client over Flash for attendees
-    if (paramsProcessorUtil.getAttendeesJoinViaHTML5Client() && role == ROLE_ATTENDEE) {
-      joinViaHtml5 = true
-    }
 
     // single client join configuration:
     // Depending on configuration, prefer the HTML5 client over Flash client

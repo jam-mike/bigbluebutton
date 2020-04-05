@@ -96,21 +96,24 @@ public class ParamsProcessorUtil {
     private boolean defaultMuteOnStart = false;
     private boolean defaultAllowModsToUnmuteUsers = false;
 
-		private boolean defaultBreakoutRoomsEnabled;
-		private boolean defaultBreakoutRoomsRecord;
-		private boolean defaultbreakoutRoomsPrivateChatEnabled;
+	private boolean defaultBreakoutRoomsEnabled;
+	private boolean defaultBreakoutRoomsRecord;
+	private boolean defaultbreakoutRoomsPrivateChatEnabled;
 
-		private boolean defaultLockSettingsDisableCam;
-		private boolean defaultLockSettingsDisableMic;
-		private boolean defaultLockSettingsDisablePrivateChat;
-		private boolean defaultLockSettingsDisablePublicChat;
-		private boolean defaultLockSettingsDisableNote;
-		private boolean defaultLockSettingsHideUserList;
-		private boolean defaultLockSettingsLockedLayout;
-		private boolean defaultLockSettingsLockOnJoin;
-		private boolean defaultLockSettingsLockOnJoinConfigurable;
+	private boolean defaultLockSettingsDisableCam;
+	private boolean defaultLockSettingsDisableMic;
+	private boolean defaultLockSettingsDisablePrivateChat;
+	private boolean defaultLockSettingsDisablePublicChat;
+	private boolean defaultLockSettingsDisableNote;
+	private boolean defaultLockSettingsHideUserList;
+	private boolean defaultLockSettingsLockedLayout;
+	private boolean defaultLockSettingsLockOnJoin;
+	private boolean defaultLockSettingsLockOnJoinConfigurable;
 
     private String defaultConfigXML = null;
+
+	private String adminAuth;
+	private String oauthCallback;
 
     private Long maxPresentationFileUpload = 30000000L; // 30MB
 
@@ -529,6 +532,10 @@ public class ParamsProcessorUtil {
 	public String getDefaultServerUrl() { return defaultServerUrl; }
 
 	public String getSecuritySalt() { return securitySalt; }
+
+	public String getAdminAuth() { return adminAuth; }
+
+	public String getOauthCallback() { return oauthCallback; }
 	
 	public String getDefaultClientUrl() {
 		return defaultClientUrl;
@@ -912,9 +919,13 @@ public class ParamsProcessorUtil {
 		this.html5ClientUrl = html5ClientUrl;
 	}
 
-   public void setMiddleManUrl(String middleManUrl) { this.middleManUrl = middleManUrl; }
+	public void setMiddleManUrl(String middleManUrl) { this.middleManUrl = middleManUrl; }
 
-   public void setBouncerUrl(String bouncerUrl) { this.bouncerUrl = bouncerUrl; }
+	public void setBouncerUrl(String bouncerUrl) { this.bouncerUrl = bouncerUrl; }
+
+	public void setAdminAuth(String adminAuth) { this.adminAuth = adminAuth; }
+	
+	public void setOauthCallback(String oauthCallback) { this.oauthCallback = oauthCallback; }
 
 	public void setModeratorsJoinViaHTML5Client(Boolean moderatorsJoinViaHTML5Client) {
 		this.moderatorsJoinViaHTML5Client = moderatorsJoinViaHTML5Client;
