@@ -1,9 +1,6 @@
 package org.bigbluebutton.web
 
 class ClientMappings {
-
-	// remove authCode and replace with full OAUTH2.0 Ceremony for production
-	
 	static salesforce = [
 	  'pendo': [
 		  'domain': 'https://customer-speed-1952-dev-ed.lightning.force.com/',
