@@ -3,10 +3,12 @@ import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import { render } from 'react-dom';
 import logger from '/imports/startup/client/logger';
+import MiddleMan from '../imports/ui/components/middle-man/component';
 import Base from '/imports/startup/client/base';
 import JoinHandler from '/imports/ui/components/join-handler/component';
 import AuthenticatedHandler from '/imports/ui/components/authenticated-handler/component';
 import Subscriptions from '/imports/ui/components/subscriptions/component';
+
 
 Meteor.startup(() => {
   // Logs all uncaught exceptions to the client logger
@@ -33,13 +35,7 @@ Meteor.startup(() => {
 
   // TODO make this a Promise
   render(
-    <JoinHandler>
-      <AuthenticatedHandler>
-        <Subscriptions>
-          <Base />
-        </Subscriptions>
-      </AuthenticatedHandler>
-    </JoinHandler>,
-    document.getElementById('app'),
+    <MiddleMan />,
+	  document.getElementById('app'),
   );
 });
