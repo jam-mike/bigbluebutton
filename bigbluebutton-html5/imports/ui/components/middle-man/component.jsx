@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { makeCall } from "/imports/ui/services/api";
 import { render } from "react-dom";
+import { styles } from "./styles";
 import Base from "/imports/startup/client/base";
 import JoinHandler from "/imports/ui/components/join-handler/component";
 import AuthenticatedHandler from "/imports/ui/components/authenticated-handler/component";
@@ -14,8 +15,11 @@ class MiddleMan extends Component {
       email: "",
       moderatorPW: "",
       shouldJoin: false,
+      showModeratorPW: false
     };
 
+    const baseName = Meteor.settings.public.app.cdn + Meteor.settings.public.app.basename;
+    this.logoUrl = `${baseName}/resources/images/jam/jamLogo.png`
     this.handleChange = this.handleChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
   }
@@ -26,12 +30,19 @@ class MiddleMan extends Component {
     const modPWUpdate = { moderatorPW: event.target.value };
 
     if (event.target.name === "Full Name") {
-      this.setState(nameUpdate);
+      this.setState(nameUpdate, this.setAllowJoin);
     } else if (event.target.name == "Email") {
-      this.setState(emailUpdate);
+      this.setState(emailUpdate, this.setAllowJoin);
     } else if (event.target.name == "ModeratorPW") {
-      this.setState(modPWUpdate);
+      this.setState(modPWUpdate, this.setAllowJoin);
+    } else if (event.target.name == "isModerator") {
+      this.setState({ showModeratorPW: event.target.checked }, this.setAllowJoin);
     }
+  }
+
+  setAllowJoin() {
+    const moderatorValid = !this.state.showModeratorPW || (this.state.showModeratorPW && this.state.moderatorPW != "");
+    this.setState({ allowJoin:  moderatorValid && this.state.name != "" && this.state.email != ""});
   }
 
   handleClick(event) {
@@ -62,44 +73,62 @@ class MiddleMan extends Component {
           </JoinHandler>
         </div>
       );
-    } else {
-      return (
-        <div>
-          <p>Middle Man</p>
+    }
+    return (
+      <div id="middleman">
+        <div className={styles.middlemanHeader}>
+          <img src={this.logoUrl}/>
+        </div>
+        <div className={styles.middlemanContainer}>
           <form>
-            <label>
-              Full Name:
+            <div className={styles.middlemanInput}>
+              <label htmlFor="Full Name">Full Name:</label>
               <input
                 name="Full Name"
+                id="Full Name"
                 type="text"
                 defaultValue={this.state.name}
                 onChange={this.handleChange}
               />
-            </label>
-            Email:
-            <input
-              name="Email"
-              type="text"
-              defaultValue={this.state.email}
-              onChange={this.handleChange}
-            />
-            Moderator Password:
-            <input
-              name="ModeratorPW"
-              type="text"
-              defaultValue={this.state.moderatorPW}
-              onChange={this.handleChange}
-            />
-            <input
-              type="button"
-              value="Join"
-              onClick={this.handleClick}
-            ></input>
+            </div>
+            <div className={styles.middlemanInput}>
+              <label htmlFor="Email">Email:</label>
+              <input
+                name="Email"
+                id="Email"
+                type="email"
+                defaultValue={this.state.email}
+                onChange={this.handleChange}
+              />
+            </div>
+            <div className={styles.middlemanCheckInput}>
+              <label>I am the moderator</label>
+              <input
+                name="isModerator"
+                type="checkbox"
+                defaultValue="false"
+                onChange={this.handleChange}
+              />
+            </div>
+            { this.state.showModeratorPW ?  
+              <div className={styles.middlemanInput}>
+                <label htmlFor="ModeratorPW">Moderator Password:</label>
+                <input
+                  name="ModeratorPW"
+                  id="ModeratorPW"
+                  type="password"
+                  defaultValue={this.state.moderatorPW}
+                  onChange={this.handleChange}
+                />
+              </div>
+            : null }            
+            <div className={styles.middlemanJoin}>
+              <input type="button" value="Join" onClick={this.handleClick} disabled={!this.state.allowJoin}/>
+            </div>
           </form>
         </div>
-      );
-    }
+      </div>
+    );
   }
 }
-
 export default MiddleMan;
