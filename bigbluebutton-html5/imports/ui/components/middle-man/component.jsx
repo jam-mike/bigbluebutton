@@ -101,6 +101,15 @@ class MiddleMan extends Component {
                 onChange={this.handleChange}
               />
             </div>
+            <div className={styles.middlemanCheckInput}>
+              <label>I am the moderator</label>
+              <input
+                name="isModerator"
+                type="checkbox"
+                defaultValue="false"
+                onChange={this.handleChange}
+              />
+            </div>
             { this.state.showModeratorPW ?  
               <div className={styles.middlemanInput}>
                 <label htmlFor="ModeratorPW">Moderator Password:</label>
@@ -112,16 +121,7 @@ class MiddleMan extends Component {
                   onChange={this.handleChange}
                 />
               </div>
-            : null }
-            <div className={styles.middlemanCheckInput}>
-              <label>I am the moderator</label>
-              <input
-                name="isModerator"
-                type="checkbox"
-                defaultValue="false"
-                onChange={this.handleChange}
-              />
-            </div>
+            : null }            
             <div className={styles.middlemanJoin}>
               <input type="button" value="Join" onClick={this.handleClick} disabled={!this.state.allowJoin}/>
             </div>
@@ -131,5 +131,4 @@ class MiddleMan extends Component {
     );
   }
 }
-
 export default MiddleMan;
