@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, changeState } from 'react';
 import { Session } from 'meteor/session';
 import logger from '/imports/startup/client/logger';
 import Auth from '/imports/ui/services/auth';

@@ -17,4 +17,4 @@ class ClientMappings {
 		  'moderatorPW': 'mp2'
 	  ]
  	];
-} 
+}
