@@ -33,7 +33,6 @@ import org.bigbluebutton.api.domain.UserSession
 import org.bigbluebutton.api.util.ResponseBuilder
 import org.bigbluebutton.presentation.PresentationUrlDownloadService
 import org.bigbluebutton.presentation.UploadedPresentation
-import org.bigbluebutton.web.ClientMappings
 import org.bigbluebutton.web.services.PresentationService
 import org.bigbluebutton.web.ClientMappings
 import org.bigbluebutton.web.services.turn.StunTurnService
@@ -597,6 +596,14 @@ class ApiController {
     joinViaHtml5 = true
     // server-wide configuration:
     // Depending on configuration, prefer the HTML5 client over Flash for moderators
+    if (paramsProcessorUtil.getModeratorsJoinViaHTML5Client() && role == ROLE_MODERATOR) {
+      joinViaHtml5 = true
+    }
+
+    // Depending on configuration, prefer the HTML5 client over Flash for attendees
+    if (paramsProcessorUtil.getAttendeesJoinViaHTML5Client() && role == ROLE_ATTENDEE) {
+      joinViaHtml5 = true
+    }
 
     // single client join configuration:
     // Depending on configuration, prefer the HTML5 client over Flash client
