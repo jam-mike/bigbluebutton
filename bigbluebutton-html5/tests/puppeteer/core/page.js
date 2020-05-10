@@ -1,7 +1,10 @@
+require('dotenv').config();
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 const helper = require('./helper');
 const params = require('../params');
 const e = require('./elements');
+const path = require('path');
 
 class Page {
   constructor(name) {
@@ -18,16 +21,46 @@ class Page {
   }
 
   // Join BigBlueButton meeting
-  async init(args) {
+  async init(args, meetingId, newParams) {
+    this.effectiveParams = newParams || params;
+    const isModerator = this.effectiveParams.moderatorPW;
     this.browser = await puppeteer.launch(args);
-    this.page = await this.browser.newPage();
+    this.page = await this.browser.newPage({ context: `bbb-${this.effectiveParams.fullName}` });
 
     await this.setDownloadBehavior(`${this.parentDir}/downloads`);
+    this.meetingId = await helper.createMeeting(params, meetingId);
 
-    this.meetingId = await helper.createMeeting(params);
-    const joinURL = helper.getJoinURL(this.meetingId, params, true);
+    const joinURL = helper.getJoinURL(this.meetingId, this.effectiveParams, isModerator);
 
     await this.page.goto(joinURL);
+    const checkForGetMetrics = async () => {
+      if (process.env.BBB_COLLECT_METRICS === 'true') {
+        await this.getMetrics();
+      }
+    };
+    if (process.env.IS_AUDIO_TEST !== 'true') {
+      await this.closeAudioModal();
+    }
+    await checkForGetMetrics();
+  }
+
+  // Joining audio with microphone
+  async joinMicrophone() {
+    await this.waitForSelector(e.audioDialog);
+    await this.waitForSelector(e.microphoneButton);
+    await this.click(e.microphoneButton, true);
+    await this.waitForSelector(e.echoYes);
+    await this.click(e.echoYes, true);
+  }
+
+  // Joining audio with Listen Only mode
+  async listenOnly() {
+    await this.waitForSelector(e.audioDialog);
+    await this.waitForSelector(e.listenButton);
+    await this.click(e.listenButton);
+  }
+
+  async closeAudioModal() {
     await this.waitForSelector(e.audioDialog);
     await this.click(e.closeAudio, true);
   }
@@ -52,7 +85,33 @@ class Page {
 
   // Get the default arguments for creating a page
   static getArgs() {
-    return { headless: true, args: ['--no-sandbox', '--use-fake-ui-for-media-stream'] };
+    return { headless: false, args: ['--no-sandbox', '--use-fake-ui-for-media-stream'] };
+  }
+
+  static getArgsWithAudio() {
+    return {
+      headless: false,
+      args: [
+        '--no-sandbox',
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+        `--use-file-for-fake-audio-capture=${path.join(__dirname,'../media/audio.wav')}`,
+        '--allow-file-access',
+      ],
+    };
+  }
+
+  static getArgsWithVideo() {
+    return {
+      headless: false,
+      args: [
+        '--no-sandbox',
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+        `--use-file-for-fake-video-capture=${path.join(__dirname,'../media/video_rgb.y4m')}`,
+        '--allow-file-access',
+      ],
+    };
   }
 
   // Returns a Promise that resolves when an element does not exist/is removed from the DOM
@@ -128,6 +187,25 @@ class Page {
 
   async waitForSelector(element) {
     await this.page.waitForSelector(element, { timeout: 0 });
+  }
+
+  async getMetrics() {
+    const metricsObj = {};
+    const dir = process.env.METRICS_FOLDER;
+    const currentTimestamp = new Date();
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+    const metric = await this.page.metrics();
+    metricsObj[`metricObj-${this.effectiveParams.fullName}`] = metric;
+    const createFile = () => {
+      try {
+        fs.appendFileSync(`${dir}/metrics-${this.effectiveParams.fullName}-${currentTimestamp}.json`, `${JSON.stringify(metricsObj)}\n`);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    createFile();
   }
 }
 

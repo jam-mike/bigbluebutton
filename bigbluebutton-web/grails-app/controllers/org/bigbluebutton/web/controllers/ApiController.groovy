@@ -33,8 +33,8 @@ import org.bigbluebutton.api.domain.UserSession
 import org.bigbluebutton.api.util.ResponseBuilder
 import org.bigbluebutton.presentation.PresentationUrlDownloadService
 import org.bigbluebutton.presentation.UploadedPresentation
-import org.bigbluebutton.web.ClientMappings
 import org.bigbluebutton.web.services.PresentationService
+import org.bigbluebutton.web.ClientMappings
 import org.bigbluebutton.web.services.turn.StunTurnService
 import org.bigbluebutton.web.services.turn.TurnEntry
 import org.bigbluebutton.web.services.turn.StunServer
@@ -94,7 +94,7 @@ class ApiController {
 		if (mapping != null) {
 			def domain = mapping.get('domain')
 			def consumerKey = mapping.get('client_id')
-			
+
 			ApiService apiServ = new ApiService(paramsProcessorUtil)
 			def requestUrl = apiServ.adminAuth(domain, consumerKey, params.target)
 
@@ -161,8 +161,8 @@ class ApiController {
       Meeting existing = meetingService.getNotEndedMeetingWithId(internalMeetingId);
       if (existing != null) {
         Map<String, Object> updateParams = paramsProcessorUtil.processUpdateCreateParams(params);
-        if (existing.getViewerPassword().equals(params.get("attendeePW")) && 
-			(existing.getModeratorPassword().equals(params.get("moderatorPW")) || 
+        if (existing.getViewerPassword().equals(params.get("attendeePW")) &&
+			(existing.getModeratorPassword().equals(params.get("moderatorPW")) ||
 			params.get("moderatorPW") == "null")
 		) {
           respondWithConference(existing, "duplicateWarning", "This conference was already in existence and may currently be in progress.");
@@ -198,7 +198,7 @@ class ApiController {
 
 		/* TODO THIS CODE SHOULD BE MOVED OUT OF MIDDLEMAN TO ADMIN AUTH
 		if (target != null && ClientMappings.salesforce.get(target) != null) {
-			
+
 			ApiService apiServ = new ApiService(paramsProcessorUtil);
 			def val = apiServ.getRefreshToken(target);
 
@@ -230,15 +230,15 @@ class ApiController {
 			salesforceClient = ClientMappings.salesforce.get('mimeo')
 			origin = salesforceClient.get('domain')
 		} else {
-			ClientMappings.salesforce.each {key, val -> 
+			ClientMappings.salesforce.each {key, val ->
 				if (val.get('domain') == origin) {
 					target = key
 					salesforceClient = val
-				}	
+				}
 			}
 		}
 
-		ApiService apiServ = new ApiService(paramsProcessorUtil);	
+		ApiService apiServ = new ApiService(paramsProcessorUtil);
 
 		String refreshToken = apiServ.getOAuthRefreshToken(
 			salesforceClient.get('client_id'),
@@ -250,8 +250,8 @@ class ApiController {
 
 		log.debug 'CALLING AWS API'
 		apiServ.storeRefreshToken(
-			target, 
-			salesforceClient.get('client_id'), 
+			target,
+			salesforceClient.get('client_id'),
 			salesforceClient.get('client_secret'),
 			refreshToken
 		)
@@ -372,10 +372,10 @@ class ApiController {
       authenticated = Boolean.parseBoolean(params.auth)
     }
 
-    Boolean joinViaHtml5 = false;
-    if (!StringUtils.isEmpty(params.joinViaHtml5)) {
-      joinViaHtml5 = Boolean.parseBoolean(params.joinViaHtml5)
-    }
+    Boolean joinViaHtml5 = true;
+    // if (!StringUtils.isEmpty(params.joinViaHtml5)) {
+    //   joinViaHtml5 = Boolean.parseBoolean(params.joinViaHtml5)
+    // }
 
     // Do we have a name for the user joining? If none, complain.
     if (!StringUtils.isEmpty(params.fullName)) {
@@ -596,6 +596,14 @@ class ApiController {
     joinViaHtml5 = true
     // server-wide configuration:
     // Depending on configuration, prefer the HTML5 client over Flash for moderators
+    if (paramsProcessorUtil.getModeratorsJoinViaHTML5Client() && role == ROLE_MODERATOR) {
+      joinViaHtml5 = true
+    }
+
+    // Depending on configuration, prefer the HTML5 client over Flash for attendees
+    if (paramsProcessorUtil.getAttendeesJoinViaHTML5Client() && role == ROLE_ATTENDEE) {
+      joinViaHtml5 = true
+    }
 
     // single client join configuration:
     // Depending on configuration, prefer the HTML5 client over Flash client
@@ -1445,6 +1453,7 @@ class ApiController {
 
 
       if (guestWaitStatus.equals(GuestPolicy.WAIT)) {
+        meetingService.guestIsWaiting(userSession.meetingID, userSession.internalUserId);
         clientURL = paramsProcessorUtil.getDefaultGuestWaitURL();
         destUrl = clientURL + "?sessionToken=" + sessionToken
         log.debug("GuestPolicy.WAIT - destUrl = " + destUrl)
@@ -2160,7 +2169,13 @@ class ApiController {
       fos.close()
 
       // Hardcode pre-uploaded presentation to the default presentation window
-      processUploadedFile("DEFAULT_PRESENTATION_POD", meetingId, presId, presFilename, pres, current);
+      processUploadedFile("DEFAULT_PRESENTATION_POD",
+              meetingId,
+              presId,
+              presFilename,
+              pres,
+              current,
+      "preupload-raw-authz-token");
     }
 
   }
@@ -2186,7 +2201,13 @@ class ApiController {
       if (presDownloadService.savePresentation(meetingId, newFilePath, address)) {
         def pres = new File(newFilePath)
         // Hardcode pre-uploaded presentation to the default presentation window
-        processUploadedFile("DEFAULT_PRESENTATION_POD", meetingId, presId, presFilename, pres, current);
+        processUploadedFile("DEFAULT_PRESENTATION_POD",
+                meetingId,
+                presId,
+                presFilename,
+                pres,
+                current,
+                "preupload-download-authz-token");
       } else {
         log.error("Failed to download presentation=[${address}], meeting=[${meetingId}], fileName=[${fileName}]")
       }
@@ -2194,10 +2215,16 @@ class ApiController {
   }
 
 
-  def processUploadedFile(podId, meetingId, presId, filename, presFile, current) {
+  def processUploadedFile(podId, meetingId, presId, filename, presFile, current, authzToken) {
     def presentationBaseUrl = presentationService.presentationBaseUrl
     // TODO add podId
-    UploadedPresentation uploadedPres = new UploadedPresentation(podId, meetingId, presId, filename, presentationBaseUrl, current);
+    UploadedPresentation uploadedPres = new UploadedPresentation(podId,
+            meetingId,
+            presId,
+            filename,
+            presentationBaseUrl,
+            current,
+    authzToken);
     uploadedPres.setUploadedFile(presFile);
     presentationService.processUploadedPresentation(uploadedPres);
   }

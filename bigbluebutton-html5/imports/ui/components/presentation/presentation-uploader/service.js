@@ -113,7 +113,7 @@ const requestPresentationUploadToken = (
 
   Tracker.autorun((c) => {
     computation = c;
-    const sub = Meteor.subscribe('presentation-upload-token', Auth.credentials, podId, filename);
+    const sub = Meteor.subscribe('presentation-upload-token', podId, filename);
     if (!sub.ready()) return;
 
     const PresentationToken = PresentationUploadToken.findOne({
@@ -187,7 +187,9 @@ const uploadAndConvertPresentations = (
   p.onUpload, p.onProgress, p.onConversion,
 )));
 
-const setPresentation = (presentationId, podId) => makeCall('setPresentation', presentationId, podId);
+const setPresentation = (presentationId, podId) => {
+  makeCall('setPresentation', presentationId, podId);
+};
 
 const removePresentation = (presentationId, podId) => {
   const hasPoll = Poll.find({}, { fields: {} }).count();
@@ -243,4 +245,5 @@ export default {
   getPresentations,
   persistPresentationChanges,
   dispatchTogglePresentationDownloadable,
+  setPresentation,
 };

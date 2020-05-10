@@ -59,10 +59,10 @@ public class PresentationUrlDownloadService {
     }
 
     public void processUploadedFile(String podId, String meetingId, String presId,
-            String filename, File presFile, Boolean current) {
+            String filename, File presFile, Boolean current, String authzToken) {
         // TODO add podId
         UploadedPresentation uploadedPres = new UploadedPresentation(podId, meetingId,
-                presId, filename, presentationBaseURL, current);
+                presId, filename, presentationBaseURL, current, authzToken);
         uploadedPres.setUploadedFile(presFile);
         processUploadedPresentation(uploadedPres);
     }
@@ -145,7 +145,7 @@ public class PresentationUrlDownloadService {
         // Hardcode pre-uploaded presentation for breakout room to the default presentation window
         processUploadedFile("DEFAULT_PRESENTATION_POD", destinationMeetingId, presId, "default-"
                 + presentationSlide.toString() + "." + filenameExt,
-                newPresentation, true);
+                newPresentation, true, "breakout-authz-token");
     }
 
     public String generatePresentationId(String name) {
@@ -186,7 +186,7 @@ public class PresentationUrlDownloadService {
         HttpURLConnection conn;
         try {
             conn = (HttpURLConnection) presUrl.openConnection();
-            conn.setReadTimeout(5000);
+            conn.setReadTimeout(60000);
             conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
             conn.addRequestProperty("User-Agent", "Mozilla");
 

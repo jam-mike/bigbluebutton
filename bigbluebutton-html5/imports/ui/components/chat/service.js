@@ -37,13 +37,13 @@ const getWelcomeProp = () => Meetings.findOne({ meetingId: Auth.meetingID },
 
 const mapGroupMessage = (message) => {
   const mappedMessage = {
-    id: message._id,
+    id: message._id || message.id,
     content: message.content,
-    time: message.timestamp,
+    time: message.timestamp || message.time,
     sender: null,
   };
 
-  if (message.sender !== SYSTEM_CHAT_TYPE) {
+  if (message.sender && message.sender !== SYSTEM_CHAT_TYPE) {
     const sender = Users.findOne({ userId: message.sender },
       {
         fields: {
@@ -97,6 +97,9 @@ const reduceGroupMessages = (previous, current) => {
 const reduceAndMapGroupMessages = messages => (messages
   .reduce(reduceGroupMessages, []).map(mapGroupMessage));
 
+const reduceAndDontMapGroupMessages = messages => (messages
+  .reduce(reduceGroupMessages, []));
+
 const getPublicGroupMessages = () => {
   const publicGroupMessages = GroupChatMsg.find({
     meetingId: Auth.meetingID,
@@ -128,7 +131,7 @@ const getPrivateGroupMessages = () => {
     }, { sort: ['timestamp'] }).fetch();
   }
 
-  return reduceAndMapGroupMessages(messages, []);
+  return reduceAndDontMapGroupMessages(messages, []);
 };
 
 const isChatLocked = (receiverID) => {
@@ -169,7 +172,7 @@ const lastReadMessageTime = (receiverID) => {
 };
 
 const sendGroupMessage = (message) => {
-  const chatID = Session.get('idChatOpen') || PUBLIC_CHAT_ID;
+  const chatID = Session.get('idChatOpen');
   const isPublicChat = chatID === PUBLIC_CHAT_ID;
 
   let destinationChatId = PUBLIC_GROUP_CHAT_ID;
@@ -220,7 +223,7 @@ const updateScrollPosition = position => ScrollCollection.upsert(
 );
 
 const updateUnreadMessage = (timestamp) => {
-  const chatID = Session.get('idChatOpen') || PUBLIC_CHAT_ID;
+  const chatID = Session.get('idChatOpen');
   const isPublic = chatID === PUBLIC_CHAT_ID;
   const chatType = isPublic ? PUBLIC_GROUP_CHAT_ID : chatID;
   return UnreadMessages.update(chatType, timestamp);
@@ -322,7 +325,9 @@ const getLastMessageTimestampFromChatList = activeChats => activeChats
   .reduce(maxNumberReducer, 0);
 
 export default {
+  mapGroupMessage,
   reduceAndMapGroupMessages,
+  reduceAndDontMapGroupMessages,
   getPublicGroupMessages,
   getPrivateGroupMessages,
   getUser,

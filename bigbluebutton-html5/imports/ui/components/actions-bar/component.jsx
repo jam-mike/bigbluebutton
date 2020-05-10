@@ -3,7 +3,6 @@ import cx from 'classnames';
 import { styles } from './styles.scss';
 import DesktopShare from './desktop-share/component';
 import ActionsDropdown from './actions-dropdown/component';
-import QuickPollDropdown from './quick-poll-dropdown/component';
 import AudioControlsContainer from '../audio/audio-controls/container';
 import JoinVideoOptionsContainer from '../video-provider/video-button/container';
 import CaptionsButtonContainer from '/imports/ui/components/actions-bar/captions/container';
@@ -13,8 +12,6 @@ class ActionsBar extends PureComponent {
   render() {
     const {
       amIPresenter,
-      handleExitVideo,
-      handleJoinVideo,
       handleShareScreen,
       handleUnshareScreen,
       isVideoBroadcasting,
@@ -36,6 +33,9 @@ class ActionsBar extends PureComponent {
       isPollingEnabled,
       isThereCurrentPresentation,
       allowExternalVideo,
+      presentations,
+      setPresentation,
+      podIds,
     } = this.props;
 
     const actionBarClasses = {};
@@ -57,20 +57,11 @@ class ActionsBar extends PureComponent {
             isSharingVideo,
             stopExternalVideoShare,
             isMeteorConnected,
+            presentations,
+            setPresentation,
+            podIds,
           }}
           />
-          {isPollingEnabled
-            ? (
-              <QuickPollDropdown
-                {...{
-                  currentSlidHasContent,
-                  intl,
-                  amIPresenter,
-                  parseCurrentSlideContent,
-                }}
-              />
-            ) : null
-          }
           {isCaptionsAvailable
             ? (
               <CaptionsButtonContainer {...{ intl }} />
@@ -82,10 +73,7 @@ class ActionsBar extends PureComponent {
           <AudioControlsContainer />
           {enableVideo
             ? (
-              <JoinVideoOptionsContainer
-                handleJoinVideo={handleJoinVideo}
-                handleCloseVideo={handleExitVideo}
-              />
+              <JoinVideoOptionsContainer />
             )
             : null}
           <DesktopShare {...{

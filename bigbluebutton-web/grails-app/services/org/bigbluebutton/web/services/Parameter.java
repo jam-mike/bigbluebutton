@@ -61,5 +61,4 @@ public class Parameter {
    ///BigBlueButton internal parameters
    public static final String BBB_RECORDING_ID = "bbb_recording_id";
    public static final String BBB_RECORDING_PUBLISHED = "bbb_recording_published";
-
 }

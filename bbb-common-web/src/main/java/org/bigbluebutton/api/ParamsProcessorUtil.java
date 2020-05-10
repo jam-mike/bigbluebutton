@@ -536,7 +536,7 @@ public class ParamsProcessorUtil {
 	public String getAdminAuth() { return adminAuth; }
 
 	public String getOauthCallback() { return oauthCallback; }
-	
+
 	public String getDefaultClientUrl() {
 		return defaultClientUrl;
 	}
@@ -550,12 +550,12 @@ public class ParamsProcessorUtil {
 	}
 
 	public String getMiddleManUrl() {
-	   return middleManUrl;
-   }
+		return middleManUrl;
+	}
 
-   public String getBouncerUrl() {
-      return bouncerUrl;
-   }
+	public String getBouncerUrl() {
+		return bouncerUrl;
+	}
 
 	public Boolean getAttendeesJoinViaHTML5Client() {
 		return attendeesJoinViaHTML5Client;
@@ -924,7 +924,7 @@ public class ParamsProcessorUtil {
 	public void setBouncerUrl(String bouncerUrl) { this.bouncerUrl = bouncerUrl; }
 
 	public void setAdminAuth(String adminAuth) { this.adminAuth = adminAuth; }
-	
+
 	public void setOauthCallback(String oauthCallback) { this.oauthCallback = oauthCallback; }
 
 	public void setModeratorsJoinViaHTML5Client(Boolean moderatorsJoinViaHTML5Client) {
