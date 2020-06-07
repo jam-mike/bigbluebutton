@@ -89,17 +89,37 @@ class ApiController {
 
   def adminAuth = {
 	  if (params.target) {
-		def mapping = ClientMappings.salesforce.get(params.target)
+		def clientMapping = ClientMappings.salesforce.get(params.target)
+    def target = params.target;
 
-		if (mapping != null) {
-			def domain = mapping.get('domain')
-			def consumerKey = mapping.get('client_id')
+      // if (mapping != null) {
+      //   def domain = mapping.get('domain')
+      //   def consumerKey = mapping.get('client_id')
 
-			ApiService apiServ = new ApiService(paramsProcessorUtil)
-			def requestUrl = apiServ.adminAuth(domain, consumerKey, params.target)
+      //   ApiService apiServ = new ApiService(paramsProcessorUtil)
+      //   def requestUrl = apiServ.adminAuth(domain, consumerKey, params.target)
 
-			redirect(uri: requestUrl)
-		}
+      //   redirect(uri: requestUrl)
+      // }
+      //TODO THIS CODE SHOULD BE MOVED OUT OF MIDDLEMAN TO ADMIN AUTH
+        if (target != null && clientMapping != null) {
+
+          ApiService apiServ = new ApiService(paramsProcessorUtil);
+          def val = apiServ.getRefreshToken(target);
+
+          log.debug 'MIKE RESPONSE: ' + val
+          // TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
+          // If it is null, we need to do the full OAuth Ceremony
+
+          // TODO create a SF api to log when user has joined meeting.
+
+          def request = apiServ.getOAuthCode(clientMapping.get('client_id'));
+
+          log.debug 'INITIAL REQUEST: ' + request
+
+          redirect(uri: request)
+        }
+        ////
 	  }
   }
 
@@ -194,28 +214,6 @@ class ApiController {
 
         middleManUrl += "?meetingID=${params.meetingID}&target=${params.target}"
         redirect(url: middleManUrl)
-
-
-		/* TODO THIS CODE SHOULD BE MOVED OUT OF MIDDLEMAN TO ADMIN AUTH
-		if (target != null && ClientMappings.salesforce.get(target) != null) {
-
-			ApiService apiServ = new ApiService(paramsProcessorUtil);
-			def val = apiServ.getRefreshToken(target);
-
-			log.debug 'MIKE RESPONSE: ' + val
-			TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
-			If it is null, we need to do the full OAuth Ceremony
-
-			TODO create a SF api to log when user has joined meeting.
-
-	        def request = apiServ.getOAuthCode(
-				client.get('client_id')
-			);
-
-			log.debug 'INITIAL REQUEST: ' + request
-
-			redirect(uri: request)
-		} */
     }
 
 	def oauthCallback() {

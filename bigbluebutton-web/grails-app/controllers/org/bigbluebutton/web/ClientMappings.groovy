@@ -10,9 +10,9 @@ class ClientMappings {
 		  'moderatorPW': 'mp1'
 	  ],
 	  'mimeo': [
-		  'domain': 'https://page-saas-1152-dev-ed.cs97.my.salesforce.com/',
-		  'client_id': '3MVG9CxwbdV68qJIvhLkNZTG8gC0mqJdrMGMGKjrZjOzCAzt5qpBgeDG0hUl43C30Ir.WEgfqGKAvAUjBXufA',
-		  'client_secret': '324E6D2A88723BDDD10413AF7787FA46D25F38C15A30556F570E9A4F6FF59374',
+		  'domain': 'https://ability-velocity-9010-dev-ed.lightning.force.com/',
+		  'client_id': '3MVG94DzwlYDSHS5eArkKjlfa0T1cDXpLrhhWt2VdTcXHO53t5V9fl2p2A00Y5pwnbVdPwlrqgsDa_R1IZHgn',
+		  'client_secret': '1B6C898B312595DD90403F0DDB1ED6DEF7F169051F4529CE2D0DB8DE01BC5FEC',
 		  'refresh_token': '',
 		  'moderatorPW': 'mp2'
 	  ]
