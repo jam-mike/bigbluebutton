@@ -545,7 +545,7 @@ class ApiService {
 		}
 	}
 
-	private static String getOauthCallback() { return 'https://7159b5fd5113.ngrok.io/bigbluebutton/api/oauthCallback'; }
+	private static String getOauthCallback() { return 'https://jamcloud.io/bigbluebutton/api/oauthCallback'; }
 
 	public String getOAuthCode(String clientId) {
 		String client = '?client_id=' + clientId
