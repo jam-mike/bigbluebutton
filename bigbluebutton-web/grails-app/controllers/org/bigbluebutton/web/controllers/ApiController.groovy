@@ -53,6 +53,8 @@ class ApiController {
   private static final String ROLE_MODERATOR = "MODERATOR"
   private static final String ROLE_ATTENDEE = "VIEWER"
   protected static Boolean REDIRECT_RESPONSE = true
+  private static String email = ""
+  private static String saleforceMeetingId = "";
 
   MeetingService meetingService;
   PresentationService presentationService
@@ -89,17 +91,37 @@ class ApiController {
 
   def adminAuth = {
 	  if (params.target) {
-		def mapping = ClientMappings.salesforce.get(params.target)
+		def clientMapping = ClientMappings.salesforce.get(params.target)
+    def target = params.target;
 
-		if (mapping != null) {
-			def domain = mapping.get('domain')
-			def consumerKey = mapping.get('client_id')
+      // if (mapping != null) {
+      //   def domain = mapping.get('domain')
+      //   def consumerKey = mapping.get('client_id')
 
-			ApiService apiServ = new ApiService(paramsProcessorUtil)
-			def requestUrl = apiServ.adminAuth(domain, consumerKey, params.target)
+      //   ApiService apiServ = new ApiService(paramsProcessorUtil)
+      //   def requestUrl = apiServ.adminAuth(domain, consumerKey, params.target)
 
-			redirect(uri: requestUrl)
-		}
+      //   redirect(uri: requestUrl)
+      // }
+      //TODO THIS CODE SHOULD BE MOVED OUT OF MIDDLEMAN TO ADMIN AUTH
+        if (target != null && clientMapping != null) {
+
+          ApiService apiServ = new ApiService(paramsProcessorUtil);
+          def val = apiServ.getRefreshToken(target);
+
+          log.debug 'MIKE RESPONSE: ' + val
+          // TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
+          // If it is null, we need to do the full OAuth Ceremony
+
+          // TODO create a SF api to log when user has joined meeting.
+
+          def request = apiServ.getOAuthCode(clientMapping.get('client_id'));
+
+          log.debug 'INITIAL REQUEST: ' + request
+
+          redirect(uri: request)
+        }
+        ////
 	  }
   }
 
@@ -194,59 +216,36 @@ class ApiController {
 
         middleManUrl += "?meetingID=${params.meetingID}&target=${params.target}"
         redirect(url: middleManUrl)
-
-
-		/* TODO THIS CODE SHOULD BE MOVED OUT OF MIDDLEMAN TO ADMIN AUTH
-		if (target != null && ClientMappings.salesforce.get(target) != null) {
-
-			ApiService apiServ = new ApiService(paramsProcessorUtil);
-			def val = apiServ.getRefreshToken(target);
-
-			log.debug 'MIKE RESPONSE: ' + val
-			TODO if value is defined here it means that the refresh token has been stored and we can use it and bypass all other calls
-			If it is null, we need to do the full OAuth Ceremony
-
-			TODO create a SF api to log when user has joined meeting.
-
-	        def request = apiServ.getOAuthCode(
-				client.get('client_id')
-			);
-
-			log.debug 'INITIAL REQUEST: ' + request
-
-			redirect(uri: request)
-		} */
     }
 
 	def oauthCallback() {
 		String code = params.code
 		def origin = request.getHeader('referer')
 
-		def salesforceClient
-		def target
+		def salesforceClient = ClientMappings.salesforce.get('mimeo')
+		def target = 'mimeo'
 
 		//assume mimeo for dev mode
-		if (origin == null) {
-			salesforceClient = ClientMappings.salesforce.get('mimeo')
-			origin = salesforceClient.get('domain')
-		} else {
-			ClientMappings.salesforce.each {key, val ->
-				if (val.get('domain') == origin) {
-					target = key
-					salesforceClient = val
-				}
-			}
-		}
+		// if (origin == null) {
+		// 	salesforceClient = ClientMappings.salesforce.get('mimeo')
+		// 	origin = salesforceClient.get('domain')
+		// } else {
+		// 	ClientMappings.salesforce.each {key, val ->
+		// 		if (val.get('domain') == origin) {
+		// 			target = key
+		// 			salesforceClient = val
+		// 		}
+		// 	}
+		// }
 
 		ApiService apiServ = new ApiService(paramsProcessorUtil);
-
 		String refreshToken = apiServ.getOAuthRefreshToken(
 			salesforceClient.get('client_id'),
 			salesforceClient.get('client_secret'),
 			params.code
 		);
 
-		def client = ClientMappings.salesforce.get(target)
+		def client = salesforceClient//ClientMappings.salesforce.get(target)
 
 		log.debug 'CALLING AWS API'
 		apiServ.storeRefreshToken(
@@ -269,8 +268,8 @@ class ApiController {
 
 		log.debug 'MIKE GOT ACCESS TOKEN: ' + data
 
-		String restRequestUrl = data.get('instanceUrl') + '/services/apexrest/meeting/log'
-		apiServ.makeSFCall(restRequestUrl, data.get('accessToken'));
+		String restRequestUrl = data.get('instanceUrl') + '/services/apexrest/meeting/join'
+		apiServ.makeSFCall(restRequestUrl, data.get('accessToken'), "", "", "", "");
 	}
 
     /********************************************
@@ -295,9 +294,9 @@ class ApiController {
 				"target": params.target
         ]
         String joinUrl = apiServ.joinUrl(joinParams, "Lets Jam!", "extended");
-
+        saleforceMeetingId = params.meetingID
         log.debug "join url: " + joinUrl
-
+        email = params.email
         redirect(url: joinUrl)
     }
 
@@ -661,6 +660,27 @@ class ApiController {
     String logStr = gson.toJson(logData);
 
     log.info(" --analytics-- data=" + logStr);
+
+    ApiService apiServ = new ApiService(paramsProcessorUtil);
+    def salesforceClient = ClientMappings.salesforce.get('mimeo')
+    def data = apiServ.getOAuthAccessToken(
+        salesforceClient.get('client_id'),
+        salesforceClient.get('client_secret'),
+        salesforceClient.get('refresh_token'),
+    );
+
+		log.debug 'MIKE GOT ACCESS TOKEN: ' + data
+    log.debug 'Sending more stuff : ' + params.fullName + params.email + params.meetingID
+
+		String restRequestUrl = data.get('instanceUrl') + '/services/apexrest/meeting/join'
+		apiServ.makeSFCall(
+      restRequestUrl, 
+      data.get('accessToken'),
+      us.fullname,
+      email,
+      saleforceMeetingId,
+      us.externMeetingID
+    );
 
     if (redirectClient) {
       log.info("Redirecting to ${destUrl}");

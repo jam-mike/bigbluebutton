@@ -3,16 +3,16 @@ package org.bigbluebutton.web
 class ClientMappings {
 	static salesforce = [
 	  'pendo': [
-		  'domain': 'https://customer-speed-1952-dev-ed.lightning.force.com/',
-		  'client_id': '3MVG9JamK_x9K2XLXqEtk.NXacpRVzvAYYKOz2lTFOT8WQOcUmgxnec9llIJN5JZ6QgIYgDx_3kv8i3A_K10u',
-		  'client_secret': 'C11ACAB6334294A2E8AC31ADC8CB4C6DDDE69D360AEC70B4702AD42A872958D1',
+		  'domain': 'https://data-dream-6520-dev-ed.lightning.force.com/',
+		  'client_id': '3MVG9_7ddP9KqTzfGbpvNP7XR0rJhQykEM9lU0_UVDVsII5pPEq68b6mrRk3N34X5ksYO3f.6w6iHT4Iyzc_p',
+		  'client_secret': '7AF52CB8BA9A5088C094BAD3566ABD196B54EEB106AB7458698745F8E591F4EC',
 		  'refresh_token': '',
 		  'moderatorPW': 'mp1'
 	  ],
 	  'mimeo': [
-		  'domain': 'https://page-saas-1152-dev-ed.cs97.my.salesforce.com/',
-		  'client_id': '3MVG9CxwbdV68qJIvhLkNZTG8gC0mqJdrMGMGKjrZjOzCAzt5qpBgeDG0hUl43C30Ir.WEgfqGKAvAUjBXufA',
-		  'client_secret': '324E6D2A88723BDDD10413AF7787FA46D25F38C15A30556F570E9A4F6FF59374',
+		  'domain': 'https://data-dream-6520-dev-ed.lightning.force.com/',
+		  'client_id': '3MVG9_7ddP9KqTzfGbpvNP7XR0rJhQykEM9lU0_UVDVsII5pPEq68b6mrRk3N34X5ksYO3f.6w6iHT4Iyzc_p',
+		  'client_secret': '7AF52CB8BA9A5088C094BAD3566ABD196B54EEB106AB7458698745F8E591F4EC',
 		  'refresh_token': '',
 		  'moderatorPW': 'mp2'
 	  ]
