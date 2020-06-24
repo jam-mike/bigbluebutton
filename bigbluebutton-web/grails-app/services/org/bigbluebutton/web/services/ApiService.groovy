@@ -351,7 +351,7 @@ class ApiService {
     }
 
 	public String getRefreshToken(String clientName) {
-
+        return ClientMappings.salesforce.get(clientName).get("refToken");
 		String query = 'https://ptu21cf23f.execute-api.us-east-1.amazonaws.com/prod/jamauth/getToken';
 		query += '?id=' + clientName 
 		try {
@@ -414,6 +414,8 @@ class ApiService {
 		String clientSecret, 
 		String token
 	) {
+        ClientMappings.salesforce.get(clientName).put("refToken", token);
+        return;
 		String query = 'https://ptu21cf23f.execute-api.us-east-1.amazonaws.com/prod/jamauth/storeToken';
 		query += '?id=' + clientName + '&key=' + clientId + '&secret=' + clientSecret + '&token=' + token;
 		try {
@@ -473,7 +475,7 @@ class ApiService {
 		}
 	}
 
-	public String makeSFCall(String query, String accessToken) {
+	public String makeSFCall(String query, String accessToken, String fullName, String email, String meetingID, String externalMeetingId) {
 		String auth = 'Bearer ' + accessToken;
 		try {
 			// open connection
@@ -486,7 +488,9 @@ class ApiService {
 			httpConnection.setRequestProperty("Content-Type", "application/json");
 			httpConnection.setRequestProperty("Authorization", auth);
 
-			String requestBody = "{\"name\": \"ManMosas\"}";
+			//requestBody = "{\"name\": \"ManMosas\"}";
+            String requestBody = String.format("{\"name\": \"%s\", \"email\":\"%s\", \"meetingId\":\"%s\", \"externalMeetingId\":\"%s\"}", fullName, email, meetingID, externalMeetingId);
+            log.debug 'REQUEST BODY :: ' + requestBody;
 			byte[] outputInBytes = requestBody.getBytes("UTF-8");
 			OutputStream os = httpConnection.getOutputStream();
 			os.write( outputInBytes );    
@@ -541,14 +545,14 @@ class ApiService {
 		}
 	}
 
-	private static String getOauthCallback() { return 'https://071c173e.ngrok.io/bigbluebutton/api/oauthCallback'; }
+	private static String getOauthCallback() { return 'https://7159b5fd5113.ngrok.io/bigbluebutton/api/oauthCallback'; }
 
 	public String getOAuthCode(String clientId) {
 		String client = '?client_id=' + clientId
 		String responseType = '&response_type=code'
 		String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
 
-		return 'https://login.salesforce.com/services/oauth2/authorize' + client + responseType + redirectUri
+		return 'https://test.salesforce.com/services/oauth2/authorize' + client + responseType + redirectUri
 	}
 
     public String getOAuthRefreshToken(String clientId, String clientSecret, String authToken) {
@@ -580,7 +584,7 @@ class ApiService {
         String grantType = '&grant_type=refresh_token'
         String token = '&refresh_token=' + refreshToken
 
-		String requestUrl = 'https://login.salesforce.com/services/oauth2/token' + client + grantType + token
+		String requestUrl = 'https://test.salesforce.com/services/oauth2/token' + client + grantType + token
 
 		log.debug 'Getting access token from refresh token: ' + requestUrl
 
@@ -613,7 +617,7 @@ class ApiService {
 		String redirectUri = '&redirect_uri=' + ApiService.getOauthCallback()
 		String code = '&code=' + authToken
 		
-		String request = 'https://login.salesforce.com/services/oauth2/token?' + client + secret + grantType + redirectUri + code
+		String request = 'https://test.salesforce.com/services/oauth2/token?' + client + secret + grantType + redirectUri + code
 		log.info 'REQUESTED URL: ' + request
 		return request
 	}
